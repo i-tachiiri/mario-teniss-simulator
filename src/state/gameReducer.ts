@@ -1,4 +1,4 @@
-import type { GameMode, Position, ShotStep, ShotType, PixelPos, ShotPhase, FinalShot } from '../types';
+import type { Position, ShotStep, ShotType, PixelPos, ShotPhase, FinalShot } from '../types';
 import type { GameAction } from './gameActions';
 import {
   computeBallPathD,
@@ -7,7 +7,6 @@ import {
 } from '../geometry/shotGeometry';
 
 export interface GameStateData {
-  mode: GameMode;
   p1Pos: Position | null;
   p2Pos: Position | null;
   p1DefaultPos: Position | null;
@@ -26,7 +25,6 @@ export interface GameStateData {
 }
 
 export const initialState: GameStateData = {
-  mode: 'shot',
   p1Pos: null,
   p2Pos: null,
   p1DefaultPos: null,
@@ -88,14 +86,6 @@ export function gameReducer(
   action: GameAction,
 ): GameStateData {
   switch (action.type) {
-    case 'SET_MODE':
-      return {
-        ...state,
-        mode: action.mode,
-        shotPhase: { status: 'idle' },
-        selectedShotId: null,
-      };
-
     case 'SET_SHOT_TYPE': {
       if (state.selectedShotId !== null) {
         const updatedSteps = state.rallySteps.map(s =>

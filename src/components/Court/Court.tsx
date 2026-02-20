@@ -53,15 +53,10 @@ export function Court({ state, dispatch, isAwaitingReturn, containerRef, childre
   // ドラッグ中のみ非アクティブ側をdim
   const activeSideForDim = isAwaitingReturn ? state.activeSide : null;
 
-  const inShot = state.mode === 'shot';
-
   let topLabelClass: string;
   let bottomLabelClass: string;
 
-  if (!inShot) {
-    topLabelClass = 'text-xs font-black mb-1 opacity-30 text-white tracking-widest transition-all duration-300';
-    bottomLabelClass = 'text-xs font-black mt-1 opacity-30 text-white tracking-widest transition-all duration-300';
-  } else if (isAwaitingReturn) {
+  if (isAwaitingReturn) {
     const activeClass = 'text-xs font-black tracking-widest transition-all duration-300 text-yellow-300 opacity-100';
     const inactiveClass = 'text-xs font-black tracking-widest transition-all duration-300 text-white opacity-20';
     topLabelClass = `mb-1 ${state.activeSide === 'top' ? activeClass : inactiveClass}`;

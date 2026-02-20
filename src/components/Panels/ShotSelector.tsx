@@ -8,8 +8,6 @@ interface Props {
 }
 
 export function ShotSelector({ state, dispatch, onShotSelect }: Props) {
-  if (state.mode !== 'shot') return null;
-
   const hasPending = state.shotPhase.status === 'awaiting';
   const hasRallyEnd = state.finalShot !== null && !hasPending;
 

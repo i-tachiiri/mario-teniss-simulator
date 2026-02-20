@@ -15,15 +15,11 @@ export interface GameStateHook {
 export function useGameState(): GameStateHook {
   const [state, dispatch] = useReducer(gameReducer, initialState);
 
-  const isAwaitingReturn =
-    state.mode === 'shot' &&
-    state.shotPhase.status === 'awaiting';
+  const isAwaitingReturn = state.shotPhase.status === 'awaiting';
 
   const canReposition =
-    state.mode === 'shot' &&
     !isAwaitingReturn &&
     state.rallySteps.length > 0 &&
-    state.shotPhase.status === 'idle' &&
     state.selectedShotId === null;
 
   return { state, dispatch, isAwaitingReturn, canReposition };

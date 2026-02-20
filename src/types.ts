@@ -9,8 +9,6 @@ export type ShotType =
   | 'lob'
   | 'jump';
 
-export type GameMode = 'setup' | 'shot';
-
 export interface Position {
   r: number;
   c: number;
