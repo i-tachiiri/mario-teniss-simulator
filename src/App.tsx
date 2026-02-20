@@ -123,7 +123,7 @@ export function App() {
           isAwaitingReturn={isAwaitingReturn}
           containerRef={containerRef}
         >
-          <SvgLayer state={state} dispatch={dispatch} draggingTo={draggingTo} />
+          <SvgLayer state={state} dispatch={dispatch} draggingTo={draggingTo} isPlaying={isPlaying} />
           <CharIcon
             ref={p1Ref}
             charName={state.p1CharName}

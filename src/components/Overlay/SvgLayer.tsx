@@ -11,9 +11,12 @@ interface Props {
   dispatch: React.Dispatch<GameAction>;
   /** useDragIcon からリアルタイム更新されるドラッグ位置 */
   draggingTo: { x: number; y: number } | null;
+  /** 再生中は編集オーバーレイを非表示にする */
+  isPlaying: boolean;
 }
 
-export function SvgLayer({ state, dispatch, draggingTo }: Props) {
+export function SvgLayer({ state, dispatch, draggingTo, isPlaying }: Props) {
+  if (isPlaying) return null;
   // 表示するショットを1本だけ決める
   const selectedShot =
     state.selectedShotId != null
