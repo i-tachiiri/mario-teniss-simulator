@@ -1,6 +1,7 @@
 import type { GameStateData } from '../../state/gameReducer';
 import type { GameAction } from '../../state/gameActions';
 import { SHOT_CONFIGS } from '../../config';
+import { computeExtensionEndpoint } from '../../geometry/shotGeometry';
 import { ShotPath } from './ShotPath';
 import { ShotPreviewPath } from './ShotPreviewPath';
 import { ShotMarker } from './ShotMarker';
@@ -32,19 +33,12 @@ export function SvgLayer({ state, dispatch, draggingTo, isPlaying }: Props) {
   let finalExtD: string | null = null;
   const finalConfig = SHOT_CONFIGS[state.finalShot?.type ?? 'strong-flat'];
   if (state.finalShot) {
-    const { x: hx, y: hy } = state.finalShot.hitFrom;
-    const { x: bx, y: by } = state.finalShot.bounceAt;
-    finalPathD = `M ${hx} ${hy} L ${bx} ${by}`;
-    const dx = bx - hx;
-    const dy = by - hy;
-    const len = Math.hypot(dx, dy);
-    if (len > 0) {
-      const nx = dx / len;
-      const ny = dy / len;
-      // drop/lob は短く延ばすだけ、それ以外はコート端まで（SVGビューポートで自動クリップ）
-      const isShortShot = state.finalShot.type === 'drop' || state.finalShot.type === 'lob';
-      const extDist = isShortShot ? 60 : 1000;
-      finalExtD = `M ${bx} ${by} L ${bx + nx * extDist} ${by + ny * extDist}`;
+    const { hitFrom, bounceAt, type } = state.finalShot;
+    finalPathD = `M ${hitFrom.x} ${hitFrom.y} L ${bounceAt.x} ${bounceAt.y}`;
+    const isShortShot = type === 'drop' || type === 'lob';
+    const ext = computeExtensionEndpoint(hitFrom, bounceAt, isShortShot);
+    if (ext) {
+      finalExtD = `M ${bounceAt.x} ${bounceAt.y} L ${ext.x} ${ext.y}`;
     }
   }
 

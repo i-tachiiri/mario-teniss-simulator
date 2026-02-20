@@ -53,6 +53,44 @@ export function getHitFrom(
 }
 
 /**
+ * バウンド後の延長終点を計算する。
+ * - isShortShot: バウンドから 60px 先
+ * - それ以外: containerSize があればコート端まで、なければ 1000px（SVG クリップに任せる）
+ * 方向は from → bounceAt の延長線上。長さが 0 の場合は null を返す。
+ */
+export function computeExtensionEndpoint(
+  from: PixelPos,
+  bounceAt: PixelPos,
+  isShortShot: boolean,
+  containerSize?: { width: number; height: number },
+): PixelPos | null {
+  const dx = bounceAt.x - from.x;
+  const dy = bounceAt.y - from.y;
+  const len = Math.hypot(dx, dy);
+  if (len === 0) return null;
+
+  const nx = dx / len;
+  const ny = dy / len;
+  const { x: bx, y: by } = bounceAt;
+
+  if (isShortShot) {
+    return { x: bx + nx * 60, y: by + ny * 60 };
+  }
+
+  if (containerSize) {
+    const { width: W, height: H } = containerSize;
+    let t = Infinity;
+    if (nx > 0) t = Math.min(t, (W - bx) / nx);
+    else if (nx < 0) t = Math.min(t, -bx / nx);
+    if (ny > 0) t = Math.min(t, (H - by) / ny);
+    else if (ny < 0) t = Math.min(t, -by / ny);
+    return { x: bx + (isFinite(t) ? t : 0) * nx, y: by + (isFinite(t) ? t : 0) * ny };
+  }
+
+  return { x: bx + nx * 1000, y: by + ny * 1000 };
+}
+
+/**
  * アイコン位置を延長線上に射影してカット点を算出し、フォア/バックを判定する。
  */
 export function computeReturnAndSide(

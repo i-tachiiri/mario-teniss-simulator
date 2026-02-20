@@ -2,6 +2,7 @@ import { useRef, useState, type RefObject } from 'react';
 import type { GameStateData } from '../state/gameReducer';
 import type { FinalShot } from '../types';
 import { SHOT_CONFIGS, ICON_HALF_SIZE } from '../config';
+import { computeExtensionEndpoint } from '../geometry/shotGeometry';
 
 interface Props {
   state: GameStateData;
@@ -104,40 +105,17 @@ export function useRallyAnimation({ state, p1Ref, p2Ref, ballRef, containerRef }
           : finalShot.hitFrom;
 
       const { x: bx, y: by } = finalShot.bounceAt;
-      const dx = bx - lastReturn.x;
-      const dy = by - lastReturn.y;
-      const len = Math.hypot(dx, dy);
 
-      if (len > 0) {
-        const nx = dx / len;
-        const ny = dy / len;
+      const isShortShot = finalShot.type === 'drop' || finalShot.type === 'lob';
+      const containerEl = containerRef.current;
+      const containerSize = containerEl
+        ? { width: containerEl.offsetWidth, height: containerEl.offsetHeight }
+        : undefined;
+      const ext = computeExtensionEndpoint(lastReturn, finalShot.bounceAt, isShortShot, containerSize);
 
-        // drop/lob は短い延長、それ以外はコート端まで計算
-        const isShortShot = finalShot.type === 'drop' || finalShot.type === 'lob';
-        let endX: number;
-        let endY: number;
-        if (isShortShot) {
-          endX = bx + nx * 60;
-          endY = by + ny * 60;
-        } else {
-          const containerEl = containerRef.current;
-          if (containerEl) {
-            const W = containerEl.offsetWidth;
-            const H = containerEl.offsetHeight;
-            let t = Infinity;
-            if (nx > 0) t = Math.min(t, (W - bx) / nx);
-            else if (nx < 0) t = Math.min(t, -bx / nx);
-            if (ny > 0) t = Math.min(t, (H - by) / ny);
-            else if (ny < 0) t = Math.min(t, -by / ny);
-            endX = bx + (isFinite(t) ? t : 0) * nx;
-            endY = by + (isFinite(t) ? t : 0) * ny;
-          } else {
-            endX = bx + nx * 500;
-            endY = by + ny * 500;
-          }
-        }
+      if (ext) {
         const tempPath = makePath(
-          `M ${lastReturn.x} ${lastReturn.y} L ${bx} ${by} L ${endX} ${endY}`,
+          `M ${lastReturn.x} ${lastReturn.y} L ${bx} ${by} L ${ext.x} ${ext.y}`,
         );
         const totalLen = tempPath.getTotalLength();
         const duration = Math.max(400, Math.round(totalLen / 0.7));
