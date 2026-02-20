@@ -6,6 +6,8 @@ import { computeExtensionEndpoint } from '../geometry/shotGeometry';
 
 interface Props {
   state: GameStateData;
+  /** useGameState から渡す導出済み最終ショット */
+  playbackFinalShot: FinalShot | null;
   p1Ref: RefObject<HTMLDivElement | null>;
   p2Ref: RefObject<HTMLDivElement | null>;
   ballRef: RefObject<HTMLDivElement | null>;
@@ -25,18 +27,13 @@ function makePath(d: string): SVGPathElement {
   return path;
 }
 
-export function useRallyAnimation({ state, p1Ref, p2Ref, ballRef, containerRef }: Props) {
+export function useRallyAnimation({ state, playbackFinalShot, p1Ref, p2Ref, ballRef, containerRef }: Props) {
   const [isPlaying, setIsPlaying] = useState(false);
   const abortRef = useRef(false);
 
   async function playRally(): Promise<void> {
     const { rallySteps, p1Pos, p2Pos } = state;
-    // ラリー終了ボタンを押さず再生した場合、awaiting のバウンドを finalShot として扱う
-    const finalShot: FinalShot | null =
-      state.finalShot ??
-      (state.shotPhase.status === 'awaiting'
-        ? { bounceAt: state.shotPhase.bounceAt, hitFrom: state.shotPhase.hitFrom, type: state.selectedShotType }
-        : null);
+    const finalShot = playbackFinalShot;
     if (rallySteps.length === 0 && !finalShot) return;
 
     abortRef.current = false;

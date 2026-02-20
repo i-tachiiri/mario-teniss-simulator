@@ -13,7 +13,7 @@ import { CharPickerSheet } from './components/Sheets/CharPickerSheet';
 import type { ShotType } from './types';
 
 export function App() {
-  const { state, dispatch, isAwaitingReturn, canReposition } = useGameState();
+  const { state, dispatch, isAwaitingReturn, canReposition, playbackFinalShot } = useGameState();
 
   // Refs
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -37,6 +37,7 @@ export function App() {
   // ラリーアニメーション
   const { isPlaying, playRally } = useRallyAnimation({
     state,
+    playbackFinalShot,
     p1Ref,
     p2Ref,
     ballRef,
