@@ -21,9 +21,6 @@ export function App() {
   const p2Ref = useRef<HTMLDivElement | null>(null);
   const ballRef = useRef<HTMLDivElement | null>(null);
 
-  // ドラッグ中プレビュー用のローカル状態
-  const [draggingTo, setDraggingTo] = useState<{ x: number; y: number } | null>(null);
-
   // アプリモード
   const [appMode, setAppMode] = useState<'edit' | 'play'>('edit');
 
@@ -56,7 +53,7 @@ export function App() {
 
   const lastShot = state.rallySteps[state.rallySteps.length - 1];
 
-  useIconDrag({
+  const { receiverDragPos } = useIconDrag({
     containerRef,
     p1Ref,
     p2Ref,
@@ -67,8 +64,6 @@ export function App() {
     dispatch,
     onP1Click: () => { setSelectingPlayer('p1'); setCharSheetOpen(true); },
     onP2Click: () => { setSelectingPlayer('p2'); setCharSheetOpen(true); },
-    onReceiverMove: (x, y) => setDraggingTo({ x, y }),
-    onReceiverDrop: () => setDraggingTo(null),
   });
 
   // =========================
@@ -124,7 +119,7 @@ export function App() {
           isAwaitingReturn={isAwaitingReturn}
           containerRef={containerRef}
         >
-          <SvgLayer state={state} dispatch={dispatch} draggingTo={draggingTo} isPlaying={isPlaying} />
+          <SvgLayer state={state} dispatch={dispatch} draggingTo={receiverDragPos} isPlaying={isPlaying} />
           <CharIcon
             ref={p1Ref}
             charName={state.p1CharName}

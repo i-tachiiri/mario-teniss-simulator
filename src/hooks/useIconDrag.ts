@@ -1,4 +1,4 @@
-import { type RefObject } from 'react';
+import { useState, type RefObject } from 'react';
 import { useDragIcon } from './useDragIcon';
 import type { GameAction } from '../state/gameActions';
 
@@ -16,15 +16,16 @@ interface UseIconDragOptions {
   dispatch: React.Dispatch<GameAction>;
   onP1Click: () => void;
   onP2Click: () => void;
-  /** ShotPreviewPath 用：レシーバードラッグ中の位置更新 */
-  onReceiverMove: (x: number, y: number) => void;
-  /** レシーバードロップ完了時のコールバック（FINALIZE_RETURN は内部で dispatch 済み） */
-  onReceiverDrop: () => void;
+}
+
+interface UseIconDragResult {
+  /** ShotPreviewPath 用：レシーバードラッグ中の現在位置。ドラッグ外は null。 */
+  receiverDragPos: { x: number; y: number } | null;
 }
 
 /**
  * App.tsx の4つの useDragIcon 呼び出しをまとめた専用フック。
- * どのドラッグが有効かの条件式はここに集約される。
+ * どのドラッグが有効かの条件式と、ShotPreviewPath 用の位置状態をここに閉じる。
  */
 export function useIconDrag({
   containerRef,
@@ -37,9 +38,8 @@ export function useIconDrag({
   dispatch,
   onP1Click,
   onP2Click,
-  onReceiverMove,
-  onReceiverDrop,
-}: UseIconDragOptions): void {
+}: UseIconDragOptions): UseIconDragResult {
+  const [receiverDragPos, setReceiverDragPos] = useState<{ x: number; y: number } | null>(null);
   // P1 フリードラッグ / リポジション（バウンド地点未選択時）
   useDragIcon(
     p1Ref,
@@ -90,9 +90,9 @@ export function useIconDrag({
     receiverRef,
     {
       containerRef,
-      onMove: (x, y) => onReceiverMove(x, y),
+      onMove: (x, y) => setReceiverDragPos({ x, y }),
       onDrop: (x, y) => {
-        onReceiverDrop();
+        setReceiverDragPos(null);
         dispatch({ type: 'FINALIZE_RETURN', iconX: x, iconY: y });
       },
     },
@@ -110,4 +110,6 @@ export function useIconDrag({
     },
     isAwaitingReturn,
   );
+
+  return { receiverDragPos };
 }
