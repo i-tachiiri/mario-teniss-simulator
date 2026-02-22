@@ -58,6 +58,18 @@ export function EditPanel({ state, dispatch, isAwaitingReturn, onEnterPlay, onSh
             {hasStar ? '★' : '☆'}
           </button>
           <button
+            className="py-2 px-2 text-[9px] bg-slate-100 text-slate-600 border border-slate-300 rounded-lg font-bold max-w-[56px] truncate"
+            onClick={onP1Click}
+          >
+            P1
+          </button>
+          <button
+            className="py-2 px-2 text-[9px] bg-slate-100 text-slate-600 border border-slate-300 rounded-lg font-bold max-w-[56px] truncate"
+            onClick={onP2Click}
+          >
+            P2
+          </button>
+          <button
             className="py-2 px-2.5 text-xs bg-white border border-slate-300 text-slate-600 rounded-lg font-bold"
             onClick={() => dispatch({ type: 'UNDO_LAST' })}
           >
@@ -68,21 +80,6 @@ export function EditPanel({ state, dispatch, isAwaitingReturn, onEnterPlay, onSh
             onClick={onEnterPlay}
           >
             ▶ 再生
-          </button>
-        </div>
-
-        <div className="flex gap-1.5">
-          <button
-            className="flex-1 py-1.5 text-[10px] bg-slate-100 text-slate-600 border border-slate-300 rounded-lg font-bold truncate"
-            onClick={onP1Click}
-          >
-            P1: {state.p1CharName}
-          </button>
-          <button
-            className="flex-1 py-1.5 text-[10px] bg-slate-100 text-slate-600 border border-slate-300 rounded-lg font-bold truncate"
-            onClick={onP2Click}
-          >
-            P2: {state.p2CharName}
           </button>
         </div>
 
