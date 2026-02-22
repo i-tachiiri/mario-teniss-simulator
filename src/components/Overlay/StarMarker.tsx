@@ -16,6 +16,9 @@ const STAR_POINTS =
 export function StarMarker({ x, y, containerRef, onDrop }: Props) {
   const iconRef = useRef<HTMLDivElement | null>(null);
   const [displayPos, setDisplayPos] = useState({ x, y });
+  // ドロップ失敗時に元位置へ戻すため、最新 props を ref で保持
+  const propsRef = useRef({ x, y, onDrop });
+  propsRef.current = { x, y, onDrop };
 
   // props が変わったら表示位置を同期
   useEffect(() => {
@@ -34,7 +37,7 @@ export function StarMarker({ x, y, containerRef, onDrop }: Props) {
       const container = containerRef.current;
       if (!container) return null;
       const r = container.getBoundingClientRect();
-      return { x: clientX - r.left, y: clientY - r.top };
+      return { x: clientX - r.left, y: clientY - r.top, w: r.width, h: r.height };
     }
 
     function onPointerDown(e: PointerEvent) {
@@ -62,10 +65,14 @@ export function StarMarker({ x, y, containerRef, onDrop }: Props) {
       document.removeEventListener('pointermove', onPointerMove);
       document.removeEventListener('pointerup', onPointerUp);
       const pos = getRelPos(e.clientX, e.clientY);
-      if (!pos) return;
       const dist = Math.hypot(e.clientX - startClientX, e.clientY - startClientY);
       if (dist >= 8) {
-        onDrop(pos.x, pos.y);
+        // コート内でリリースされた場合のみ確定、それ以外は元位置へ戻す
+        if (pos && pos.x >= 0 && pos.y >= 0 && pos.x <= pos.w && pos.y <= pos.h) {
+          propsRef.current.onDrop(pos.x, pos.y);
+        } else {
+          setDisplayPos({ x: propsRef.current.x, y: propsRef.current.y });
+        }
       }
     }
 
