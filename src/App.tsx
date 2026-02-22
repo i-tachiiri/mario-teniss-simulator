@@ -141,6 +141,8 @@ export function App() {
             isAwaitingReturn={isAwaitingReturn}
             onEnterPlay={handleEnterPlay}
             onShotSelect={() => setShotSheetDismissed(false)}
+            onP1Click={() => { setSelectingPlayer('p1'); setCharSheetOpen(true); }}
+            onP2Click={() => { setSelectingPlayer('p2'); setCharSheetOpen(true); }}
           />
         ) : (
           <PlayPanel

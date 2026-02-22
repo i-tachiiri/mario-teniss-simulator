@@ -72,7 +72,7 @@ export function useDragIcon(
       const pos = getRelPos(e.clientX, e.clientY);
       if (!pos) return;
       const dist = Math.hypot(e.clientX - startClientX, e.clientY - startClientY);
-      if (dist < 8 && cbRef.current.onClick) {
+      if (dist < 12 && cbRef.current.onClick) {
         cbRef.current.onClick();
       } else {
         cbRef.current.onDrop(pos.x, pos.y);
