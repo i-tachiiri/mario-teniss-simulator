@@ -1,13 +1,13 @@
 import { useRef, useState, type RefObject } from 'react';
 import type { GameStateData } from '../state/gameReducer';
-import type { FinalShot } from '../types';
+import type { FinalShot, ShotType } from '../types';
 import { SHOT_CONFIGS, ICON_HALF_SIZE } from '../config';
+
+export interface PlayingShot { pathD: string; type: ShotType }
 import { computeExtensionEndpoint } from '../geometry/shotGeometry';
 
 interface Props {
   state: GameStateData;
-  /** useGameState から渡す導出済み最終ショット */
-  playbackFinalShot: FinalShot | null;
   p1Ref: RefObject<HTMLDivElement | null>;
   p2Ref: RefObject<HTMLDivElement | null>;
   ballRef: RefObject<HTMLDivElement | null>;
@@ -27,13 +27,19 @@ function makePath(d: string): SVGPathElement {
   return path;
 }
 
-export function useRallyAnimation({ state, playbackFinalShot, p1Ref, p2Ref, ballRef, containerRef }: Props) {
+export function useRallyAnimation({ state, p1Ref, p2Ref, ballRef, containerRef }: Props) {
   const [isPlaying, setIsPlaying] = useState(false);
+  const [playingShot, setPlayingShot] = useState<PlayingShot | null>(null);
   const abortRef = useRef(false);
 
   async function playRally(): Promise<void> {
-    const { rallySteps, p1Pos, p2Pos } = state;
-    const finalShot = playbackFinalShot;
+    // 再生開始時に1回だけスナップショット確定。以降はこのローカル変数のみ参照する。
+    const { rallySteps, p1Pos, p2Pos, finalShot: explicitFinalShot, shotPhase, selectedShotType } = state;
+    const finalShot: FinalShot | null =
+      explicitFinalShot ??
+      (shotPhase.status === 'awaiting'
+        ? { bounceAt: shotPhase.bounceAt, hitFrom: shotPhase.hitFrom, type: selectedShotType }
+        : null);
     if (rallySteps.length === 0 && !finalShot) return;
 
     abortRef.current = false;
@@ -60,6 +66,8 @@ export function useRallyAnimation({ state, playbackFinalShot, p1Ref, p2Ref, ball
     for (const shot of rallySteps) {
       if (abortRef.current) break;
       if (!shot.ballPathD) continue;
+
+      setPlayingShot({ pathD: shot.ballPathD, type: shot.type });
 
       const config = SHOT_CONFIGS[shot.type];
       const bounceInBottom = shot.bounceAt.r >= 5;
@@ -111,9 +119,9 @@ export function useRallyAnimation({ state, playbackFinalShot, p1Ref, p2Ref, ball
       const ext = computeExtensionEndpoint(lastReturn, finalShot.bounceAt, isShortShot, containerSize);
 
       if (ext) {
-        const tempPath = makePath(
-          `M ${lastReturn.x} ${lastReturn.y} L ${bx} ${by} L ${ext.x} ${ext.y}`,
-        );
+        const finalPathD = `M ${lastReturn.x} ${lastReturn.y} L ${bx} ${by} L ${ext.x} ${ext.y}`;
+        setPlayingShot({ pathD: finalPathD, type: finalShot.type });
+        const tempPath = makePath(finalPathD);
         const totalLen = tempPath.getTotalLength();
         const duration = Math.max(400, Math.round(totalLen / 0.7));
         const startTime = performance.now();
@@ -135,9 +143,10 @@ export function useRallyAnimation({ state, playbackFinalShot, p1Ref, p2Ref, ball
     }
 
     await new Promise<void>(r => setTimeout(r, 400));
+    setPlayingShot(null);
     ballEl.style.display = 'none';
     setIsPlaying(false);
   }
 
-  return { isPlaying, playRally };
+  return { isPlaying, playingShot, playRally };
 }

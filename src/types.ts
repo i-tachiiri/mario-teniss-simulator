@@ -35,6 +35,8 @@ export interface ShotStep {
   id: number;
   /** ネットを越えるショット線のSVGパス（hitFrom → bounceAt） */
   ballPathD?: string;
+  /** ☆マーカーの位置（スマッシュ可能地点） */
+  starPos?: PixelPos;
 }
 
 /**
@@ -44,7 +46,7 @@ export interface ShotStep {
  */
 export type ShotPhase =
   | { status: 'idle' }
-  | { status: 'awaiting'; bounceAt: Position; hitFrom: PixelPos };
+  | { status: 'awaiting'; bounceAt: Position; hitFrom: PixelPos; starPos?: PixelPos };
 
 /** ラリー終了ショット（返球されない最後の球）。3フィールドは常に同時に変わるため1オブジェクトにまとめる。 */
 export interface FinalShot {

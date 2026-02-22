@@ -13,7 +13,7 @@ import { CharPickerSheet } from './components/Sheets/CharPickerSheet';
 import type { ShotType } from './types';
 
 export function App() {
-  const { state, dispatch, isAwaitingReturn, canReposition, playbackFinalShot } = useGameState();
+  const { state, dispatch, isAwaitingReturn, canReposition } = useGameState();
 
   // Refs
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -32,9 +32,8 @@ export function App() {
   const [selectingPlayer, setSelectingPlayer] = useState<'p1' | 'p2'>('p1');
 
   // ラリーアニメーション
-  const { isPlaying, playRally } = useRallyAnimation({
+  const { isPlaying, playingShot, playRally } = useRallyAnimation({
     state,
-    playbackFinalShot,
     p1Ref,
     p2Ref,
     ballRef,
@@ -119,7 +118,7 @@ export function App() {
           isAwaitingReturn={isAwaitingReturn}
           containerRef={containerRef}
         >
-          <SvgLayer state={state} dispatch={dispatch} draggingTo={receiverDragPos} isPlaying={isPlaying} />
+          <SvgLayer state={state} dispatch={dispatch} draggingTo={receiverDragPos} isPlaying={isPlaying} playingShot={playingShot} containerRef={containerRef} />
           <CharIcon
             ref={p1Ref}
             charName={state.p1CharName}

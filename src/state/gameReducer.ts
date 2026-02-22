@@ -51,7 +51,7 @@ function autoFinalizePendingShot(state: GameStateData): GameStateData {
   if (!receiverIconPos) {
     return { ...state, shotPhase: { status: 'idle' }, selectedShotId: null };
   }
-  const { bounceAt, hitFrom } = state.shotPhase;
+  const { bounceAt, hitFrom, starPos: pendingStarPos } = state.shotPhase;
   const { returnAt, shotSide } = computeReturnAndSide(
     hitFrom,
     bounceAt,
@@ -69,6 +69,7 @@ function autoFinalizePendingShot(state: GameStateData): GameStateData {
     type: state.selectedShotType,
     id: Date.now(),
     ballPathD,
+    starPos: pendingStarPos,
   };
   const bounceInBottom = bounceAt.r >= 5;
   return {
@@ -132,7 +133,7 @@ export function gameReducer(
 
     case 'FINALIZE_RETURN': {
       if (state.shotPhase.status !== 'awaiting') return state;
-      const { bounceAt, hitFrom } = state.shotPhase;
+      const { bounceAt, hitFrom, starPos: pendingStarPos } = state.shotPhase;
       const { returnAt, shotSide } = computeReturnAndSide(
         hitFrom,
         bounceAt,
@@ -150,6 +151,7 @@ export function gameReducer(
         type: state.selectedShotType,
         id: Date.now(),
         ballPathD,
+        starPos: pendingStarPos,
       };
       const bounceInBottom = bounceAt.r >= 5;
       return {
@@ -240,6 +242,18 @@ export function gameReducer(
           ? { x: removed.playerAt.x, y: removed.playerAt.y }
           : state.p2IconPos,
       };
+    }
+
+    case 'SET_PENDING_STAR': {
+      if (state.shotPhase.status !== 'awaiting') return state;
+      return { ...state, shotPhase: { ...state.shotPhase, starPos: action.pos ?? undefined } };
+    }
+
+    case 'SET_STAR_POS': {
+      const updatedSteps = state.rallySteps.map(s =>
+        s.id === action.id ? { ...s, starPos: action.pos ?? undefined } : s,
+      );
+      return { ...state, rallySteps: updatedSteps };
     }
 
     case 'RESET_ALL':

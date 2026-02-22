@@ -1,14 +1,13 @@
-import type { ShotStep } from '../../types';
+import type { ShotType } from '../../types';
 import { SHOT_CONFIGS } from '../../config';
 
 interface Props {
-  shot: ShotStep;
-  /** パスの d 属性（App.tsx で computeBallPathD から計算済み） */
+  type: ShotType;
   pathD: string;
 }
 
-export function ShotPath({ shot, pathD }: Props) {
-  const config = SHOT_CONFIGS[shot.type];
+export function ShotPath({ type, pathD }: Props) {
+  const config = SHOT_CONFIGS[type];
 
   return (
     <>

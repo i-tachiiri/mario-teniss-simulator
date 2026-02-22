@@ -1,3 +1,4 @@
+import type { RefObject } from 'react';
 import type { GameStateData } from '../../state/gameReducer';
 import type { GameAction } from '../../state/gameActions';
 import { SHOT_CONFIGS } from '../../config';
@@ -6,6 +7,8 @@ import { ShotPath } from './ShotPath';
 import { ShotPreviewPath } from './ShotPreviewPath';
 import { ShotMarker } from './ShotMarker';
 import { ForeBackLabel } from './ForeBackLabel';
+import { StarMarker } from './StarMarker';
+import type { PlayingShot } from '../../hooks/useRallyAnimation';
 
 interface Props {
   state: GameStateData;
@@ -14,10 +17,32 @@ interface Props {
   draggingTo: { x: number; y: number } | null;
   /** 再生中は編集オーバーレイを非表示にする */
   isPlaying: boolean;
+  /** 再生中に表示する現在ショットの線 */
+  playingShot: PlayingShot | null;
+  /** ☆マーカーのドラッグ基準コンテナ */
+  containerRef: RefObject<HTMLDivElement | null>;
 }
 
-export function SvgLayer({ state, dispatch, draggingTo, isPlaying }: Props) {
-  if (isPlaying) return null;
+export function SvgLayer({ state, dispatch, draggingTo, isPlaying, playingShot, containerRef }: Props) {
+  if (isPlaying) {
+    if (!playingShot) return null;
+    return (
+      <svg
+        className="absolute top-0 left-0 w-full h-full pointer-events-none"
+        style={{ zIndex: 30 }}
+      >
+        <defs>
+          <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+            <feGaussianBlur in="SourceAlpha" stdDeviation="2" />
+            <feOffset dx="1" dy="2" result="offsetblur" />
+            <feComponentTransfer><feFuncA type="linear" slope="0.3" /></feComponentTransfer>
+            <feMerge><feMergeNode /><feMergeNode in="SourceGraphic" /></feMerge>
+          </filter>
+        </defs>
+        <ShotPath type={playingShot.type} pathD={playingShot.pathD} />
+      </svg>
+    );
+  }
   // 表示するショットを1本だけ決める
   const selectedShot =
     state.selectedShotId != null
@@ -65,7 +90,7 @@ export function SvgLayer({ state, dispatch, draggingTo, isPlaying }: Props) {
 
         {/* 現在のショット（1本のみ） */}
         {shotToShow?.ballPathD && (
-          <ShotPath shot={shotToShow} pathD={shotToShow.ballPathD} />
+          <ShotPath type={shotToShow.type} pathD={shotToShow.ballPathD} />
         )}
 
         {/* ショット入力プレビュー */}
@@ -152,6 +177,18 @@ export function SvgLayer({ state, dispatch, draggingTo, isPlaying }: Props) {
         </>
       )}
 
+      {/* ☆マーカー */}
+      {shotToShow?.starPos && (
+        <StarMarker
+          x={shotToShow.starPos.x}
+          y={shotToShow.starPos.y}
+          containerRef={containerRef}
+          onDrop={(x, y) =>
+            dispatch({ type: 'SET_STAR_POS', id: shotToShow.id, pos: { x, y } })
+          }
+        />
+      )}
+
       {/* ラリー終了バウンドマーカー */}
       {state.finalShot && (
         <ShotMarker x={state.finalShot.bounceAt.x} y={state.finalShot.bounceAt.y} color="#ef4444" />
@@ -170,6 +207,17 @@ export function SvgLayer({ state, dispatch, draggingTo, isPlaying }: Props) {
             y={state.shotPhase.bounceAt.y}
             color="#ef4444"
           />
+          {/* awaiting中の☆マーカー */}
+          {state.shotPhase.starPos && (
+            <StarMarker
+              x={state.shotPhase.starPos.x}
+              y={state.shotPhase.starPos.y}
+              containerRef={containerRef}
+              onDrop={(x, y) =>
+                dispatch({ type: 'SET_PENDING_STAR', pos: { x, y } })
+              }
+            />
+          )}
         </>
       )}
     </>

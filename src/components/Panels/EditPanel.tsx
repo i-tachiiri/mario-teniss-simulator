@@ -12,6 +12,14 @@ interface Props {
 }
 
 export function EditPanel({ state, dispatch, isAwaitingReturn, onEnterPlay, onShotSelect }: Props) {
+  const pendingPhase = state.shotPhase.status === 'awaiting' ? state.shotPhase : null;
+  const currentShot =
+    state.selectedShotId != null
+      ? state.rallySteps.find(s => s.id === state.selectedShotId)
+      : state.rallySteps[state.rallySteps.length - 1];
+  const hasStar = pendingPhase ? !!pendingPhase.starPos : !!currentShot?.starPos;
+  const starDisabled = !pendingPhase && !currentShot;
+
   return (
     <div className="flex flex-col gap-2">
       <div className="bg-white rounded-2xl p-3 shadow flex flex-col gap-2">
@@ -21,6 +29,31 @@ export function EditPanel({ state, dispatch, isAwaitingReturn, onEnterPlay, onSh
             onClick={() => dispatch({ type: 'CANCEL_PENDING_SHOT' })}
           >
             ラリー終了
+          </button>
+          <button
+            disabled={starDisabled}
+            className={`py-2 px-2.5 text-base rounded-lg font-bold border transition-colors ${
+              hasStar
+                ? 'bg-yellow-400 text-yellow-900 border-yellow-500'
+                : 'bg-white text-slate-400 border-slate-300'
+            } ${starDisabled ? 'opacity-30' : ''}`}
+            onClick={() => {
+              if (pendingPhase) {
+                dispatch({
+                  type: 'SET_PENDING_STAR',
+                  pos: hasStar ? null : pendingPhase.bounceAt,
+                });
+              } else {
+                if (!currentShot) return;
+                dispatch({
+                  type: 'SET_STAR_POS',
+                  id: currentShot.id,
+                  pos: hasStar ? null : currentShot.bounceAt,
+                });
+              }
+            }}
+          >
+            {hasStar ? '★' : '☆'}
           </button>
           <button
             className="py-2 px-2.5 text-xs bg-white border border-slate-300 text-slate-600 rounded-lg font-bold"

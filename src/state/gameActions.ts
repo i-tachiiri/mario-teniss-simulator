@@ -1,4 +1,4 @@
-import type { Position, ShotType } from '../types';
+import type { Position, ShotType, PixelPos } from '../types';
 
 export type GameAction =
   | { type: 'SET_SHOT_TYPE'; shotType: ShotType }
@@ -11,4 +11,6 @@ export type GameAction =
   | { type: 'CANCEL_PENDING_SHOT' }
   | { type: 'UPDATE_LAST_RETURN'; iconX: number; iconY: number }
   | { type: 'UNDO_LAST' }
-  | { type: 'RESET_ALL' };
+  | { type: 'RESET_ALL' }
+  | { type: 'SET_STAR_POS'; id: number; pos: PixelPos | null }
+  | { type: 'SET_PENDING_STAR'; pos: PixelPos | null };
