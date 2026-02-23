@@ -8,7 +8,6 @@ export type GameAction =
   | { type: 'CELL_CLICKED'; r: number; c: number; x: number; y: number }
   | { type: 'FINALIZE_RETURN'; iconX: number; iconY: number }
   | { type: 'SELECT_SHOT'; id: number | null }
-  | { type: 'CANCEL_PENDING_SHOT' }
   | { type: 'UPDATE_LAST_RETURN'; iconX: number; iconY: number }
   | { type: 'UNDO_LAST' }
   | { type: 'RESET_ALL' }

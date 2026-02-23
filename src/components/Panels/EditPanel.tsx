@@ -1,19 +1,16 @@
 import type { GameStateData } from '../../state/gameReducer';
 import type { GameAction } from '../../state/gameActions';
-import { ShotHint } from './ShotHint';
 import { ShotSelector } from './ShotSelector';
 
 interface Props {
   state: GameStateData;
   dispatch: React.Dispatch<GameAction>;
-  isAwaitingReturn: boolean;
-  onEnterPlay: () => void;
   onShotSelect: (id: number) => void;
   onP1Click: () => void;
   onP2Click: () => void;
 }
 
-export function EditPanel({ state, dispatch, isAwaitingReturn, onEnterPlay, onShotSelect, onP1Click, onP2Click }: Props) {
+export function EditPanel({ state, dispatch, onShotSelect, onP1Click, onP2Click }: Props) {
   const pendingPhase = state.shotPhase.status === 'awaiting' ? state.shotPhase : null;
   const currentShot =
     state.selectedShotId != null
@@ -27,10 +24,10 @@ export function EditPanel({ state, dispatch, isAwaitingReturn, onEnterPlay, onSh
       <div className="bg-white rounded-2xl p-3 shadow flex flex-col gap-2">
         <div className="flex gap-1.5 items-center">
           <button
-            className="flex-1 py-2 text-[9px] bg-rose-100 text-rose-700 border border-rose-300 rounded-lg font-bold"
-            onClick={() => dispatch({ type: 'CANCEL_PENDING_SHOT' })}
+            disabled
+            className="flex-1 py-2 text-[10px] bg-slate-100 text-slate-500 border border-slate-300 rounded-lg font-bold opacity-80"
           >
-            ラリー終了
+            ▶ 再生（実装予定）
           </button>
           <button
             disabled={starDisabled}
@@ -75,15 +72,8 @@ export function EditPanel({ state, dispatch, isAwaitingReturn, onEnterPlay, onSh
           >
             戻す
           </button>
-          <button
-            className="py-2 px-3 bg-rose-500 text-white font-black rounded-xl text-xs shadow-lg"
-            onClick={onEnterPlay}
-          >
-            ▶ 再生
-          </button>
         </div>
 
-        <ShotHint state={state} isAwaitingReturn={isAwaitingReturn} />
         <ShotSelector state={state} dispatch={dispatch} onShotSelect={onShotSelect} />
 
         <button

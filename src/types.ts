@@ -48,13 +48,6 @@ export type ShotPhase =
   | { status: 'idle' }
   | { status: 'awaiting'; bounceAt: Position; hitFrom: PixelPos; starPos?: PixelPos };
 
-/** ラリー終了ショット（返球されない最後の球）。3フィールドは常に同時に変わるため1オブジェクトにまとめる。 */
-export interface FinalShot {
-  bounceAt: Position;
-  hitFrom: PixelPos;
-  type: ShotType;
-}
-
 export interface ShotConfig {
   color: string;
   width: number;

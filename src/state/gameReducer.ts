@@ -1,4 +1,4 @@
-import type { Position, ShotStep, ShotType, PixelPos, ShotPhase, FinalShot } from '../types';
+import type { Position, ShotStep, ShotType, PixelPos, ShotPhase } from '../types';
 import type { GameAction } from './gameActions';
 import {
   computeBallPathD,
@@ -19,7 +19,6 @@ export interface GameStateData {
   selectedShotType: ShotType;
   activeSide: 'top' | 'bottom';
   selectedShotId: number | null;
-  finalShot: FinalShot | null;
   p1CharName: string;
   p2CharName: string;
 }
@@ -36,7 +35,6 @@ export const initialState: GameStateData = {
   selectedShotType: 'strong-flat',
   activeSide: 'top',
   selectedShotId: null,
-  finalShot: null,
   p1CharName: 'ノコノコ',
   p2CharName: 'ノコノコ',
 };
@@ -128,7 +126,7 @@ export function gameReducer(
       const activeSide: 'top' | 'bottom' = action.r < 5 ? 'top' : 'bottom';
       const bounceAt: Position = { r: action.r, c: action.c, x: action.x, y: action.y };
       const hitFrom = getHitFrom(baseState.rallySteps, activeSide, baseState.p1Pos, baseState.p2Pos);
-      return { ...baseState, activeSide, shotPhase: { status: 'awaiting', bounceAt, hitFrom }, selectedShotId: null, finalShot: null };
+      return { ...baseState, activeSide, shotPhase: { status: 'awaiting', bounceAt, hitFrom }, selectedShotId: null };
     }
 
     case 'FINALIZE_RETURN': {
@@ -159,7 +157,6 @@ export function gameReducer(
         rallySteps: [...state.rallySteps, shot],
         shotPhase: { status: 'idle' },
         selectedShotId: null,
-        finalShot: null,
         p1IconPos: bounceInBottom
           ? { x: action.iconX, y: action.iconY }
           : state.p1IconPos,
@@ -178,19 +175,6 @@ export function gameReducer(
       }
       return { ...state, selectedShotId: action.id };
     }
-
-    case 'CANCEL_PENDING_SHOT':
-      if (state.shotPhase.status !== 'awaiting') return state;
-      return {
-        ...state,
-        finalShot: {
-          bounceAt: state.shotPhase.bounceAt,
-          hitFrom: state.shotPhase.hitFrom,
-          type: state.selectedShotType,
-        },
-        shotPhase: { status: 'idle' },
-        selectedShotId: null,
-      };
 
     case 'UPDATE_LAST_RETURN': {
       if (state.rallySteps.length === 0) return state;
@@ -223,10 +207,6 @@ export function gameReducer(
           shotPhase: { status: 'idle' },
           selectedShotId: null,
         };
-      }
-      // ラリー終了マーカーがあればそれを先に取り消す
-      if (state.finalShot !== null) {
-        return { ...state, finalShot: null };
       }
       if (state.rallySteps.length === 0) return state;
       const removed = state.rallySteps[state.rallySteps.length - 1];

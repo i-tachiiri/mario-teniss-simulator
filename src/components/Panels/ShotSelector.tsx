@@ -9,9 +9,8 @@ interface Props {
 
 export function ShotSelector({ state, dispatch, onShotSelect }: Props) {
   const hasPending = state.shotPhase.status === 'awaiting';
-  const hasRallyEnd = state.finalShot !== null && !hasPending;
 
-  if (state.rallySteps.length === 0 && !hasPending && !hasRallyEnd) return null;
+  if (state.rallySteps.length === 0 && !hasPending) return null;
 
   return (
     <div className="flex gap-1.5 flex-wrap items-center">
@@ -37,21 +36,10 @@ export function ShotSelector({ state, dispatch, onShotSelect }: Props) {
         );
       })}
 
-      {/* バウンド選択済みで未確定のショット */}
       {hasPending && (
         <button
           disabled
           className="w-7 h-7 rounded-full text-xs font-black border-2 border-dashed border-slate-400 bg-white text-slate-400 opacity-60"
-        >
-          {state.rallySteps.length + 1}
-        </button>
-      )}
-
-      {/* ラリー終了ショット */}
-      {hasRallyEnd && (
-        <button
-          disabled
-          className="w-7 h-7 rounded-full text-xs font-black border-2 bg-rose-100 text-rose-500 border-rose-400"
         >
           {state.rallySteps.length + 1}
         </button>
