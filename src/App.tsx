@@ -99,7 +99,12 @@ export function App() {
           state={state}
           dispatch={dispatch}
           onShotSelect={() => setShotSheetDismissed(false)}
-          onShotButtonClick={() => setShotSheetDismissed(false)}
+          onShotButtonClick={() => {
+            if (state.selectedShotId === null && state.rallySteps.length > 0) {
+              dispatch({ type: 'SELECT_SHOT', id: state.rallySteps[state.rallySteps.length - 1].id });
+            }
+            setShotSheetDismissed(false);
+          }}
           onP1Click={() => { setSelectingPlayer('p1'); setCharSheetOpen(true); }}
           onP2Click={() => { setSelectingPlayer('p2'); setCharSheetOpen(true); }}
         />

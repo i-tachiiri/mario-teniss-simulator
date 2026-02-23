@@ -1,44 +1,45 @@
 import type { Position, PixelPos, ShotStep } from '../types';
 
-/**
- * ベジェ曲線パスを計算して SVG の d 属性文字列を返す。
- * hitFrom → bounceAt → returnAt を通る二次ベジェ曲線。
- */
 export function computeBallPathD(
   hitFrom: PixelPos,
   bounceAt: Position,
-  returnAt: PixelPos,
+  endAt: PixelPos,
+  curveAmount: number,
 ): string {
   const d1 = Math.hypot(bounceAt.x - hitFrom.x, bounceAt.y - hitFrom.y);
-  const d2 = Math.hypot(returnAt.x - bounceAt.x, returnAt.y - bounceAt.y);
+  const d2 = Math.hypot(endAt.x - bounceAt.x, endAt.y - bounceAt.y);
   const total = d1 + d2;
 
   if (total < 1 || d1 / total < 1e-4 || d1 / total > 1 - 1e-4) {
-    return `M ${hitFrom.x} ${hitFrom.y} L ${returnAt.x} ${returnAt.y}`;
+    return `M ${hitFrom.x} ${hitFrom.y} L ${endAt.x} ${endAt.y}`;
   }
 
   const t = d1 / total;
   const denom = 2 * t * (1 - t);
-  const ctrlX =
-    (bounceAt.x - (1 - t) * (1 - t) * hitFrom.x - t * t * returnAt.x) / denom;
-  const ctrlY =
-    (bounceAt.y - (1 - t) * (1 - t) * hitFrom.y - t * t * returnAt.y) / denom;
+  let ctrlX = (bounceAt.x - (1 - t) * (1 - t) * hitFrom.x - t * t * endAt.x) / denom;
+  let ctrlY = (bounceAt.y - (1 - t) * (1 - t) * hitFrom.y - t * t * endAt.y) / denom;
 
-  return `M ${hitFrom.x} ${hitFrom.y} Q ${ctrlX} ${ctrlY} ${returnAt.x} ${returnAt.y}`;
+  if (curveAmount !== 0) {
+    const vx = endAt.x - hitFrom.x;
+    const vy = endAt.y - hitFrom.y;
+    const vLen = Math.hypot(vx, vy);
+    if (vLen > 1e-3) {
+      const nx = -vy / vLen;
+      const ny = vx / vLen;
+      ctrlX += nx * curveAmount;
+      ctrlY += ny * curveAmount;
+    }
+  }
+
+  return `M ${hitFrom.x} ${hitFrom.y} Q ${ctrlX} ${ctrlY} ${endAt.x} ${endAt.y}`;
 }
 
-/**
- * ラリーの流れから「次のヒット位置」を取得する。
- * activeSide に応じて直近の returnAt を探す。
- * returnAt は PixelPos（グリッド座標不要）なので戻り値も PixelPos。
- */
 export function getHitFrom(
   rallySteps: ShotStep[],
   activeSide: 'top' | 'bottom',
   p1Pos: Position | null,
   p2Pos: Position | null,
 ): PixelPos {
-  // activeSide === 'top' → ボールはトップコートにバウンド → ヒッターはボトム (P1)
   const findInBottom = activeSide === 'top';
 
   for (let i = rallySteps.length - 1; i >= 0; i--) {
@@ -52,12 +53,6 @@ export function getHitFrom(
   return fallback ?? { x: 0, y: 0 };
 }
 
-/**
- * バウンド後の延長終点を計算する。
- * - isShortShot: バウンドから 60px 先
- * - それ以外: containerSize があればコート端まで、なければ 1000px（SVG クリップに任せる）
- * 方向は from → bounceAt の延長線上。長さが 0 の場合は null を返す。
- */
 export function computeExtensionEndpoint(
   from: PixelPos,
   bounceAt: PixelPos,
@@ -73,9 +68,7 @@ export function computeExtensionEndpoint(
   const ny = dy / len;
   const { x: bx, y: by } = bounceAt;
 
-  if (isShortShot) {
-    return { x: bx + nx * 60, y: by + ny * 60 };
-  }
+  if (isShortShot) return { x: bx + nx * 60, y: by + ny * 60 };
 
   if (containerSize) {
     const { width: W, height: H } = containerSize;
@@ -90,9 +83,6 @@ export function computeExtensionEndpoint(
   return { x: bx + nx * 1000, y: by + ny * 1000 };
 }
 
-/**
- * アイコン位置を延長線上に射影してカット点を算出し、フォア/バックを判定する。
- */
 export function computeReturnAndSide(
   hitFrom: PixelPos,
   bounceAt: Position,
@@ -115,12 +105,37 @@ export function computeReturnAndSide(
     cutY = bounceAt.y + t * ny;
   }
 
-  // P1 (bottom, facing up): 体の右にカット点 → フォア
-  // P2 (top, facing down):  体の左にカット点 → フォア
   const shotSide: 'forehand' | 'backhand' =
     activeSide === 'bottom'
       ? cutX >= iconX ? 'forehand' : 'backhand'
       : cutX <= iconX ? 'forehand' : 'backhand';
 
   return { returnAt: { x: cutX, y: cutY }, shotSide };
+}
+
+export function computeSceneVisual(
+  shot: Pick<ShotStep, 'hitFrom' | 'bounceAt' | 'returnAt' | 'type' | 'curveLevel'>,
+  baseCurve: number,
+  containerSize?: { width: number; height: number },
+): { pathD: string; secondBounceAt?: PixelPos } {
+  const shortDistance = shot.type === 'drop' ? 40 : shot.type === 'jump' ? 120 : null;
+
+  let endAt: PixelPos = shot.returnAt;
+  let secondBounceAt: PixelPos | undefined;
+
+  if (shortDistance !== null) {
+    const dx = shot.returnAt.x - shot.bounceAt.x;
+    const dy = shot.returnAt.y - shot.bounceAt.y;
+    const len = Math.hypot(dx, dy) || 1;
+    const nx = dx / len;
+    const ny = dy / len;
+    endAt = { x: shot.bounceAt.x + nx * shortDistance, y: shot.bounceAt.y + ny * shortDistance };
+    secondBounceAt = { x: shot.bounceAt.x + nx * shortDistance * 0.6, y: shot.bounceAt.y + ny * shortDistance * 0.6 };
+  } else {
+    endAt =
+      computeExtensionEndpoint(shot.hitFrom, shot.returnAt, false, containerSize) ?? shot.returnAt;
+  }
+
+  const pathD = computeBallPathD(shot.hitFrom, shot.bounceAt, endAt, baseCurve + shot.curveLevel * 16);
+  return { pathD, secondBounceAt };
 }
