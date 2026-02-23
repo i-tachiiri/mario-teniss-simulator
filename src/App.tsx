@@ -86,9 +86,8 @@ export function App() {
             alt="P2"
             pos={state.p2IconPos}
           />
+          <SubtitleBar state={state} dispatch={dispatch} />
         </Court>
-
-        <SubtitleBar state={state} dispatch={dispatch} />
 
         <EditPanel
           state={state}

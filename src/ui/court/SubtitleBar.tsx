@@ -27,7 +27,7 @@ export function SubtitleBar({ state, dispatch }: Props) {
   }
 
   return (
-    <div className="w-full flex items-stretch gap-2 bg-black/50 rounded-lg px-3 py-2" style={{ height: '72px' }}>
+    <div className="absolute bottom-0 left-0 right-0 z-30 flex items-stretch gap-2 bg-black/50 px-3 py-2" style={{ height: '72px' }}>
       <textarea
         className="flex-1 bg-transparent text-white resize-none outline-none placeholder-white/35 leading-snug"
         style={{ fontSize }}
