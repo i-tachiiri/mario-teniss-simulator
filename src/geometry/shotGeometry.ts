@@ -1,34 +1,122 @@
 import type { Position, PixelPos, ShotStep } from '../types';
 
+function normalize(dx: number, dy: number): PixelPos | null {
+  const len = Math.hypot(dx, dy);
+  if (len < 1e-6) return null;
+  return { x: dx / len, y: dy / len };
+}
+
+export function computeEndpointToCourtEdge(
+  from: PixelPos,
+  toward: PixelPos,
+  containerSize?: { width: number; height: number },
+): PixelPos | null {
+  const n = normalize(toward.x - from.x, toward.y - from.y);
+  if (!n) return null;
+
+  if (!containerSize) {
+    return { x: from.x + n.x * 1000, y: from.y + n.y * 1000 };
+  }
+
+  const { width: W, height: H } = containerSize;
+  let t = Infinity;
+  if (n.x > 0) t = Math.min(t, (W - from.x) / n.x);
+  else if (n.x < 0) t = Math.min(t, -from.x / n.x);
+  if (n.y > 0) t = Math.min(t, (H - from.y) / n.y);
+  else if (n.y < 0) t = Math.min(t, -from.y / n.y);
+
+  if (!isFinite(t) || t <= 0) return null;
+  return { x: from.x + n.x * t, y: from.y + n.y * t };
+}
+
+function computePointByDistance(from: PixelPos, toward: PixelPos, dist: number): PixelPos | null {
+  const n = normalize(toward.x - from.x, toward.y - from.y);
+  if (!n) return null;
+  return { x: from.x + n.x * dist, y: from.y + n.y * dist };
+}
+
+function computeQuadraticSegmentD(
+  start: PixelPos,
+  end: PixelPos,
+  bendPx: number,
+  bendDir: 1 | -1,
+): string {
+  const n = normalize(end.x - start.x, end.y - start.y);
+  if (!n || Math.abs(bendPx) < 0.01) {
+    return `L ${end.x} ${end.y}`;
+  }
+
+  const px = -n.y;
+  const py = n.x;
+  const midX = (start.x + end.x) / 2;
+  const midY = (start.y + end.y) / 2;
+  const ctrlX = midX + px * bendPx * bendDir;
+  const ctrlY = midY + py * bendPx * bendDir;
+  return `Q ${ctrlX} ${ctrlY} ${end.x} ${end.y}`;
+}
+
+export function computeShotPathD(params: {
+  hitFrom: PixelPos;
+  bounce1: PixelPos;
+  returnAt: PixelPos;
+  isDropLike: boolean;
+  isJumpLike: boolean;
+  containerSize?: { width: number; height: number };
+  bend1?: number;
+  bend2?: number;
+  bendDir1?: 1 | -1;
+  bendDir2?: 1 | -1;
+}): { pathD: string; secondBounceAt?: PixelPos } {
+  const {
+    hitFrom,
+    bounce1,
+    returnAt,
+    isDropLike,
+    isJumpLike,
+    containerSize,
+    bend1 = 0,
+    bend2 = 0,
+    bendDir1 = 1,
+    bendDir2 = 1,
+  } = params;
+
+  const cellSize = containerSize ? containerSize.width / 6 : 50;
+  const shortDist = isDropLike ? cellSize : isJumpLike ? cellSize * 3 : null;
+
+  let end2 = computeEndpointToCourtEdge(bounce1, returnAt, containerSize) ?? returnAt;
+  let secondBounceAt: PixelPos | undefined;
+
+  if (shortDist !== null) {
+    const shortEnd = computePointByDistance(bounce1, returnAt, shortDist);
+    const second = computePointByDistance(bounce1, returnAt, shortDist * 0.6);
+    if (shortEnd) end2 = shortEnd;
+    if (second) secondBounceAt = second;
+  }
+
+  const d = [
+    `M ${hitFrom.x} ${hitFrom.y}`,
+    computeQuadraticSegmentD(hitFrom, bounce1, bend1, bendDir1),
+    computeQuadraticSegmentD(bounce1, end2, bend2, bendDir2),
+  ].join(' ');
+
+  return { pathD: d, secondBounceAt };
+}
+
 export function computeBallPathD(
   hitFrom: PixelPos,
-  bounceAt: Position,
+  bounceAt: PixelPos,
   endAt: PixelPos,
   curveAmount: number,
 ): string {
-  const firstLen = Math.hypot(bounceAt.x - hitFrom.x, bounceAt.y - hitFrom.y);
-  const secondLen = Math.hypot(endAt.x - bounceAt.x, endAt.y - bounceAt.y);
-
-  if (firstLen < 1 || secondLen < 1) {
-    return `M ${hitFrom.x} ${hitFrom.y} L ${bounceAt.x} ${bounceAt.y} L ${endAt.x} ${endAt.y}`;
-  }
-
-  const m1x = (hitFrom.x + bounceAt.x) / 2;
-  const m1y = (hitFrom.y + bounceAt.y) / 2;
-  const m2x = (bounceAt.x + endAt.x) / 2;
-  const m2y = (bounceAt.y + endAt.y) / 2;
-
-  const n1x = -(bounceAt.y - hitFrom.y) / firstLen;
-  const n1y = (bounceAt.x - hitFrom.x) / firstLen;
-  const n2x = -(endAt.y - bounceAt.y) / secondLen;
-  const n2y = (endAt.x - bounceAt.x) / secondLen;
-
-  const c1x = m1x + n1x * curveAmount;
-  const c1y = m1y + n1y * curveAmount;
-  const c2x = m2x + n2x * curveAmount;
-  const c2y = m2y + n2y * curveAmount;
-
-  return `M ${hitFrom.x} ${hitFrom.y} Q ${c1x} ${c1y} ${bounceAt.x} ${bounceAt.y} Q ${c2x} ${c2y} ${endAt.x} ${endAt.y}`;
+  return computeShotPathD({
+    hitFrom,
+    bounce1: bounceAt,
+    returnAt: endAt,
+    isDropLike: false,
+    isJumpLike: false,
+    bend1: curveAmount,
+    bend2: curveAmount,
+  }).pathD;
 }
 
 export function getHitFrom(
@@ -48,36 +136,6 @@ export function getHitFrom(
 
   const fallback = findInBottom ? p1Pos : p2Pos;
   return fallback ?? { x: 0, y: 0 };
-}
-
-export function computeExtensionEndpoint(
-  from: PixelPos,
-  bounceAt: PixelPos,
-  isShortShot: boolean,
-  containerSize?: { width: number; height: number },
-): PixelPos | null {
-  const dx = bounceAt.x - from.x;
-  const dy = bounceAt.y - from.y;
-  const len = Math.hypot(dx, dy);
-  if (len === 0) return null;
-
-  const nx = dx / len;
-  const ny = dy / len;
-  const { x: bx, y: by } = bounceAt;
-
-  if (isShortShot) return { x: bx + nx * 60, y: by + ny * 60 };
-
-  if (containerSize) {
-    const { width: W, height: H } = containerSize;
-    let t = Infinity;
-    if (nx > 0) t = Math.min(t, (W - bx) / nx);
-    else if (nx < 0) t = Math.min(t, -bx / nx);
-    if (ny > 0) t = Math.min(t, (H - by) / ny);
-    else if (ny < 0) t = Math.min(t, -by / ny);
-    return { x: bx + (isFinite(t) ? t : 0) * nx, y: by + (isFinite(t) ? t : 0) * ny };
-  }
-
-  return { x: bx + nx * 1000, y: by + ny * 1000 };
 }
 
 export function computeReturnAndSide(
@@ -110,30 +168,30 @@ export function computeReturnAndSide(
   return { returnAt: { x: cutX, y: cutY }, shotSide };
 }
 
-export function computeSceneVisual(
-  shot: Pick<ShotStep, 'hitFrom' | 'bounceAt' | 'returnAt' | 'type' | 'curveLevel'>,
-  baseCurve: number,
-  containerSize?: { width: number; height: number },
-): { pathD: string; secondBounceAt?: PixelPos } {
-  const cellSize = containerSize ? containerSize.width / 6 : 50;
-  const shortDistance = shot.type === 'drop' ? cellSize : shot.type === 'jump' ? cellSize * 3 : null;
+export function computeSceneVisual(params: {
+  hitFrom: PixelPos;
+  bounce1: PixelPos;
+  returnAt: PixelPos;
+  type: ShotStep['type'];
+  curveLevel: number;
+  baseCurve: number;
+  containerSize?: { width: number; height: number };
+}): { pathD: string; secondBounceAt?: PixelPos } {
+  const { hitFrom, bounce1, returnAt, type, curveLevel, baseCurve, containerSize } = params;
+  const signedCurve = baseCurve + curveLevel * 16;
+  const curve = Math.abs(signedCurve);
+  const curveDir: 1 | -1 = signedCurve >= 0 ? 1 : -1;
 
-  let endAt: PixelPos = shot.returnAt;
-  let secondBounceAt: PixelPos | undefined;
-
-  if (shortDistance !== null) {
-    const dx = shot.returnAt.x - shot.bounceAt.x;
-    const dy = shot.returnAt.y - shot.bounceAt.y;
-    const len = Math.hypot(dx, dy) || 1;
-    const nx = dx / len;
-    const ny = dy / len;
-    endAt = { x: shot.bounceAt.x + nx * shortDistance, y: shot.bounceAt.y + ny * shortDistance };
-    secondBounceAt = { x: shot.bounceAt.x + nx * shortDistance * 0.6, y: shot.bounceAt.y + ny * shortDistance * 0.6 };
-  } else {
-    endAt =
-      computeExtensionEndpoint(shot.hitFrom, shot.returnAt, false, containerSize) ?? shot.returnAt;
-  }
-
-  const pathD = computeBallPathD(shot.hitFrom, shot.bounceAt, endAt, baseCurve + shot.curveLevel * 16);
-  return { pathD, secondBounceAt };
+  return computeShotPathD({
+    hitFrom,
+    bounce1,
+    returnAt,
+    isDropLike: type === 'drop',
+    isJumpLike: type === 'jump',
+    containerSize,
+    bend1: curve,
+    bend2: curve,
+    bendDir1: curveDir,
+    bendDir2: curveDir,
+  });
 }

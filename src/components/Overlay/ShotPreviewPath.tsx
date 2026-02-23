@@ -1,10 +1,10 @@
-import type { Position, PixelPos, ShotType } from '../../types';
+import type { PixelPos, ShotType } from '../../types';
 import { SHOT_CONFIGS } from '../../config';
 import { computeSceneVisual } from '../../geometry/shotGeometry';
 
 interface Props {
   hitFrom: PixelPos;
-  bounceAt: Position;
+  bounceAt: PixelPos;
   type: ShotType;
   dragPos?: { x: number; y: number };
   curveLevel: number;
@@ -12,16 +12,14 @@ interface Props {
 
 export function ShotPreviewPath({ hitFrom, bounceAt, type, dragPos, curveLevel }: Props) {
   const config = SHOT_CONFIGS[type];
-  const { pathD } = computeSceneVisual(
-    {
-      hitFrom,
-      bounceAt,
-      returnAt: dragPos ?? bounceAt,
-      type,
-      curveLevel,
-    },
-    config.curveAmount,
-  );
+  const { pathD } = computeSceneVisual({
+    hitFrom,
+    bounce1: bounceAt,
+    returnAt: dragPos ?? bounceAt,
+    type,
+    curveLevel,
+    baseCurve: config.curveAmount,
+  });
 
   return (
     <>

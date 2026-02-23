@@ -27,7 +27,15 @@ export function SvgLayer({ state, dispatch, draggingTo, containerRef }: Props) {
     : undefined;
 
   const finalVisual = shotToShow
-    ? computeSceneVisual(shotToShow, SHOT_CONFIGS[shotToShow.type].curveAmount, size)
+    ? computeSceneVisual({
+        hitFrom: shotToShow.hitFrom,
+        bounce1: { x: shotToShow.bounceAt.x, y: shotToShow.bounceAt.y },
+        returnAt: shotToShow.returnAt,
+        type: shotToShow.type,
+        curveLevel: shotToShow.curveLevel,
+        baseCurve: SHOT_CONFIGS[shotToShow.type].curveAmount,
+        containerSize: size,
+      })
     : null;
 
   return (
@@ -47,7 +55,7 @@ export function SvgLayer({ state, dispatch, draggingTo, containerRef }: Props) {
         {state.shotPhase.status === 'awaiting' && (
           <ShotPreviewPath
             hitFrom={state.shotPhase.hitFrom}
-            bounceAt={state.shotPhase.bounceAt}
+            bounceAt={{ x: state.shotPhase.bounceAt.x, y: state.shotPhase.bounceAt.y }}
             type={state.selectedShotType}
             dragPos={draggingTo ?? undefined}
             curveLevel={state.shotPhase.curveLevel}
