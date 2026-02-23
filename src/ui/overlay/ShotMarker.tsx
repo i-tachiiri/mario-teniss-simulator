@@ -1,8 +1,10 @@
+import type { MouseEvent } from 'react';
+
 interface Props {
   x: number;
   y: number;
   color: string;
-  onClick?: () => void;
+  onClick?: (e: MouseEvent<HTMLDivElement>) => void;
   clickable?: boolean;
 }
 
