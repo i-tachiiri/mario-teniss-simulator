@@ -2,6 +2,11 @@ import type { PixelPos, ShotStep } from '../../types';
 import { pointsToPathD } from '../path/pointsToPathD';
 import { buildShotPoints } from './buildShotPoints';
 
+export interface ShotVisualPath {
+  d: string;
+  markers: PixelPos[];
+}
+
 export function computeShotPathD(params: {
   hitFrom: PixelPos;
   bounce1: PixelPos;
@@ -13,7 +18,7 @@ export function computeShotPathD(params: {
   bend2?: number;
   bendDir1?: 1 | -1;
   bendDir2?: 1 | -1;
-}): { pathD: string; secondBounceAt?: PixelPos } {
+}): ShotVisualPath {
   const {
     hitFrom,
     bounce1,
@@ -37,7 +42,7 @@ export function computeShotPathD(params: {
   });
 
   return {
-    pathD: pointsToPathD({
+    d: pointsToPathD({
       hitFromPx: points.hitFromPx,
       bouncePx: points.bouncePx,
       returnPx: points.returnPx,
@@ -46,7 +51,7 @@ export function computeShotPathD(params: {
       bendDir1,
       bendDir2,
     }),
-    secondBounceAt: points.secondBounceAt,
+    markers: points.markers,
   };
 }
 
@@ -64,7 +69,7 @@ export function computeBallPathD(
     isJumpLike: false,
     bend1: curveAmount,
     bend2: curveAmount,
-  }).pathD;
+  }).d;
 }
 
 export function computeSceneVisual(params: {
@@ -72,12 +77,12 @@ export function computeSceneVisual(params: {
   bounce1: PixelPos;
   returnAt: PixelPos;
   type: ShotStep['type'];
-  curveLevel: number;
+  bendLevel: number;
   baseCurve: number;
   containerSize?: { width: number; height: number };
-}): { pathD: string; secondBounceAt?: PixelPos } {
-  const { hitFrom, bounce1, returnAt, type, curveLevel, baseCurve, containerSize } = params;
-  const signedCurve = baseCurve + curveLevel * 16;
+}): ShotVisualPath {
+  const { hitFrom, bounce1, returnAt, type, bendLevel, baseCurve, containerSize } = params;
+  const signedCurve = baseCurve + bendLevel * 16;
   const curve = Math.abs(signedCurve);
   const curveDir: 1 | -1 = signedCurve >= 0 ? 1 : -1;
 

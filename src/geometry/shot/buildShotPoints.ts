@@ -15,26 +15,26 @@ export function buildShotPoints(params: {
   isDropLike: boolean;
   isJumpLike: boolean;
   containerSize?: { width: number; height: number };
-}): { hitFromPx: PixelPos; bouncePx: PixelPos; returnPx: PixelPos; secondBounceAt?: PixelPos } {
+}): { hitFromPx: PixelPos; bouncePx: PixelPos; returnPx: PixelPos; markers: PixelPos[] } {
   const { hitFromPx, bouncePx, returnPx, isDropLike, isJumpLike, containerSize } = params;
 
   const cellSize = containerSize ? containerSize.width / 6 : 50;
   const shortDist = isDropLike ? cellSize : isJumpLike ? cellSize * 3 : null;
 
   let endPx = computeExtensionEndpoint(bouncePx, returnPx, containerSize) ?? returnPx;
-  let secondBounceAt: PixelPos | undefined;
+  const markers: PixelPos[] = [bouncePx];
 
   if (shortDist !== null) {
     const shortEnd = computePointByDistance(bouncePx, returnPx, shortDist);
-    const second = computePointByDistance(bouncePx, returnPx, shortDist * 0.6);
+    const second = computePointByDistance(bouncePx, returnPx, shortDist);
     if (shortEnd) endPx = shortEnd;
-    if (second) secondBounceAt = second;
+    if (second) markers.push(second);
   }
 
   return {
     hitFromPx,
     bouncePx,
     returnPx: endPx,
-    secondBounceAt,
+    markers,
   };
 }

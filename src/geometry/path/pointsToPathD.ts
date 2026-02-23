@@ -12,12 +12,18 @@ function computeQuadraticSegmentD(
     return `L ${end.x} ${end.y}`;
   }
 
+  const len = Math.hypot(end.x - start.x, end.y - start.y);
+  const lengthScaledBendPx = bendPx * Math.min(1.5, Math.max(0.35, len / 200));
+  if (Math.abs(lengthScaledBendPx) < 0.01) {
+    return `L ${end.x} ${end.y}`;
+  }
+
   const px = -n.y;
   const py = n.x;
   const midX = (start.x + end.x) / 2;
   const midY = (start.y + end.y) / 2;
-  const ctrlX = midX + px * bendPx * bendDir;
-  const ctrlY = midY + py * bendPx * bendDir;
+  const ctrlX = midX + px * lengthScaledBendPx * bendDir;
+  const ctrlY = midY + py * lengthScaledBendPx * bendDir;
   return `Q ${ctrlX} ${ctrlY} ${end.x} ${end.y}`;
 }
 
