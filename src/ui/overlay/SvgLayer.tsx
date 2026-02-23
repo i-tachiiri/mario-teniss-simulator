@@ -21,7 +21,7 @@ export function SvgLayer({ state, dispatch, draggingTo, containerRef, onShotMark
   const selectedShot =
     state.selectedShotId != null ? (state.rallySteps.find(s => s.id === state.selectedShotId) ?? null) : null;
   const lastShot = state.rallySteps.length > 0 ? state.rallySteps[state.rallySteps.length - 1] : null;
-  const shotToShow = selectedShot ?? (state.shotPhase.status === 'awaiting' ? null : lastShot);
+  const shotToShow = selectedShot ?? lastShot;
 
   const size = containerRef.current
     ? { width: containerRef.current.clientWidth, height: containerRef.current.clientHeight }
@@ -38,6 +38,19 @@ export function SvgLayer({ state, dispatch, draggingTo, containerRef, onShotMark
         containerSize: size,
       })
     : null;
+
+  const previewVisual =
+    state.shotPhase.status === 'awaiting'
+      ? computeSceneVisual({
+          hitFrom: state.shotPhase.hitFrom,
+          bounce1: { x: state.shotPhase.bounceAt.x, y: state.shotPhase.bounceAt.y },
+          returnAt: draggingTo ?? { x: state.shotPhase.bounceAt.x, y: state.shotPhase.bounceAt.y },
+          type: state.selectedShotType,
+          bendLevel: state.shotPhase.curveLevel,
+          baseCurve: SHOT_CONFIGS[state.selectedShotType].curveAmount,
+          containerSize: size,
+        })
+      : null;
 
   return (
     <>
@@ -126,6 +139,9 @@ export function SvgLayer({ state, dispatch, draggingTo, containerRef, onShotMark
               onShotMarkerClick();
             }}
           />
+          {previewVisual?.markers.slice(1).map((marker, idx) => (
+            <ShotMarker key={`preview-extra-bounce-${idx}`} x={marker.x} y={marker.y} color="#ef4444" />
+          ))}
           {state.shotPhase.starPos && (
             <StarMarker
               x={state.shotPhase.starPos.x}
