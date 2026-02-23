@@ -21,7 +21,7 @@ export function SvgLayer({ state, dispatch, draggingTo, containerRef, onShotMark
   const selectedShot =
     state.selectedShotId != null ? (state.rallySteps.find(s => s.id === state.selectedShotId) ?? null) : null;
   const lastShot = state.rallySteps.length > 0 ? state.rallySteps[state.rallySteps.length - 1] : null;
-  const shotToShow = selectedShot ?? lastShot;
+  const shotToShow = selectedShot ?? (state.shotPhase.status === 'awaiting' ? null : lastShot);
 
   const size = containerRef.current
     ? { width: containerRef.current.clientWidth, height: containerRef.current.clientHeight }
