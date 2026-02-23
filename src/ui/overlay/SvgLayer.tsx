@@ -18,39 +18,46 @@ interface Props {
 }
 
 export function SvgLayer({ state, dispatch, draggingTo, containerRef, onShotMarkerClick }: Props) {
+  const isEditing = state.shotPhase.status === 'editing';
+
   const selectedShot =
     state.selectedShotId != null ? (state.rallySteps.find(s => s.id === state.selectedShotId) ?? null) : null;
   const lastShot = state.rallySteps.length > 0 ? state.rallySteps[state.rallySteps.length - 1] : null;
-  const shotToShow = selectedShot ?? (state.shotPhase.status === 'awaiting' ? null : lastShot);
+  const shotToShow = selectedShot ?? lastShot;
 
   const size = containerRef.current
     ? { width: containerRef.current.clientWidth, height: containerRef.current.clientHeight }
     : undefined;
 
-  const finalVisual = shotToShow
-    ? computeSceneVisual({
-        hitFrom: shotToShow.hitFrom,
-        bounce1: { x: shotToShow.bounceAt.x, y: shotToShow.bounceAt.y },
-        returnAt: shotToShow.returnAt,
-        type: shotToShow.type,
-        bendLevel: shotToShow.curveLevel,
-        baseCurve: SHOT_CONFIGS[shotToShow.type].curveAmount,
-        containerSize: size,
-      })
-    : null;
-
-  const previewVisual =
-    state.shotPhase.status === 'awaiting'
+  // 編集中: ドラッグ中は draggingTo、それ以外は保存済み returnAt を使ったビジュアル
+  const editVisual =
+    isEditing && shotToShow
       ? computeSceneVisual({
-          hitFrom: state.shotPhase.hitFrom,
-          bounce1: { x: state.shotPhase.bounceAt.x, y: state.shotPhase.bounceAt.y },
-          returnAt: draggingTo ?? { x: state.shotPhase.bounceAt.x, y: state.shotPhase.bounceAt.y },
+          hitFrom: shotToShow.hitFrom,
+          bounce1: { x: shotToShow.bounceAt.x, y: shotToShow.bounceAt.y },
+          returnAt: draggingTo ?? shotToShow.returnAt,
           type: state.selectedShotType,
-          bendLevel: state.shotPhase.curveLevel,
+          bendLevel: shotToShow.curveLevel,
           baseCurve: SHOT_CONFIGS[state.selectedShotType].curveAmount,
           containerSize: size,
         })
       : null;
+
+  // 非編集時（閲覧のみ）のビジュアル
+  const finalVisual =
+    !isEditing && shotToShow
+      ? computeSceneVisual({
+          hitFrom: shotToShow.hitFrom,
+          bounce1: { x: shotToShow.bounceAt.x, y: shotToShow.bounceAt.y },
+          returnAt: shotToShow.returnAt,
+          type: shotToShow.type,
+          bendLevel: shotToShow.curveLevel,
+          baseCurve: SHOT_CONFIGS[shotToShow.type].curveAmount,
+          containerSize: size,
+        })
+      : null;
+
+  const activeVisual = editVisual ?? finalVisual;
 
   return (
     <>
@@ -64,15 +71,20 @@ export function SvgLayer({ state, dispatch, draggingTo, containerRef, onShotMark
           </filter>
         </defs>
 
-        {shotToShow && finalVisual && <ShotPath type={shotToShow.type} pathD={finalVisual.d} />}
+        {/* 非編集: 確定済みパス */}
+        {!isEditing && shotToShow && finalVisual && (
+          <ShotPath type={shotToShow.type} pathD={finalVisual.d} />
+        )}
 
-        {state.shotPhase.status === 'awaiting' && (
+        {/* 編集中: ライブプレビューパス（ドラッグ位置 or 保存済み returnAt） */}
+        {isEditing && shotToShow && (
           <ShotPreviewPath
-            hitFrom={state.shotPhase.hitFrom}
-            bounceAt={{ x: state.shotPhase.bounceAt.x, y: state.shotPhase.bounceAt.y }}
+            hitFrom={shotToShow.hitFrom}
+            bounceAt={{ x: shotToShow.bounceAt.x, y: shotToShow.bounceAt.y }}
             type={state.selectedShotType}
-            dragPos={draggingTo ?? undefined}
-            curveLevel={state.shotPhase.curveLevel}
+            dragPos={draggingTo ?? shotToShow.playerAt}
+            curveLevel={shotToShow.curveLevel}
+            containerSize={size}
           />
         )}
 
@@ -86,7 +98,7 @@ export function SvgLayer({ state, dispatch, draggingTo, containerRef, onShotMark
           <ShotMarker
             x={shotToShow.hitFrom.x}
             y={shotToShow.hitFrom.y}
-            color={SHOT_CONFIGS[shotToShow.type].color}
+            color={SHOT_CONFIGS[isEditing ? state.selectedShotType : shotToShow.type].color}
             clickable
             onClick={e => {
               e.stopPropagation();
@@ -103,7 +115,7 @@ export function SvgLayer({ state, dispatch, draggingTo, containerRef, onShotMark
               onShotMarkerClick();
             }}
           />
-          {finalVisual?.markers.slice(1).map((marker, idx) => (
+          {activeVisual?.markers.slice(1).map((marker, idx) => (
             <ShotMarker key={`extra-bounce-${idx}`} x={marker.x} y={marker.y} color="#ef4444" />
           ))}
           {shotToShow.starPos && (
@@ -112,42 +124,6 @@ export function SvgLayer({ state, dispatch, draggingTo, containerRef, onShotMark
               y={shotToShow.starPos.y}
               containerRef={containerRef}
               onDrop={(x, y) => dispatch({ type: 'SET_STAR_POS', id: shotToShow.id, pos: { x, y } })}
-            />
-          )}
-        </>
-      )}
-
-      {state.shotPhase.status === 'awaiting' && (
-        <>
-          <ShotMarker
-            x={state.shotPhase.hitFrom.x}
-            y={state.shotPhase.hitFrom.y}
-            color={SHOT_CONFIGS[state.selectedShotType].color}
-            clickable
-            onClick={e => {
-              e.stopPropagation();
-              onShotMarkerClick();
-            }}
-          />
-          <ShotMarker
-            x={state.shotPhase.bounceAt.x}
-            y={state.shotPhase.bounceAt.y}
-            color="#ef4444"
-            clickable
-            onClick={e => {
-              e.stopPropagation();
-              onShotMarkerClick();
-            }}
-          />
-          {previewVisual?.markers.slice(1).map((marker, idx) => (
-            <ShotMarker key={`preview-extra-bounce-${idx}`} x={marker.x} y={marker.y} color="#ef4444" />
-          ))}
-          {state.shotPhase.starPos && (
-            <StarMarker
-              x={state.shotPhase.starPos.x}
-              y={state.shotPhase.starPos.y}
-              containerRef={containerRef}
-              onDrop={(x, y) => dispatch({ type: 'SET_PENDING_STAR', pos: { x, y } })}
             />
           )}
         </>
