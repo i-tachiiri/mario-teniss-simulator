@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState } from 'react';
 import { useGameState } from './state/useGameState';
 import { useIconDrag } from './hooks/useIconDrag';
 import { Court } from './ui/court/Court';
@@ -16,13 +16,9 @@ export function App() {
   const p1Ref = useRef<HTMLDivElement | null>(null);
   const p2Ref = useRef<HTMLDivElement | null>(null);
 
-  const [shotSheetDismissed, setShotSheetDismissed] = useState(false);
+  const [shotTypeSheetOpen, setShotTypeSheetOpen] = useState(false);
   const [charSheetOpen, setCharSheetOpen] = useState(false);
   const [selectingPlayer, setSelectingPlayer] = useState<'p1' | 'p2'>('p1');
-
-  useEffect(() => {
-    setShotSheetDismissed(false);
-  }, [state.shotPhase, state.selectedShotId]);
 
   const lastShot = state.rallySteps[state.rallySteps.length - 1];
 
@@ -39,12 +35,10 @@ export function App() {
     onP2Click: () => { setSelectingPlayer('p2'); setCharSheetOpen(true); },
   });
 
-  const shotSheetVisible =
-    !shotSheetDismissed &&
-    (state.shotPhase.status === 'awaiting' || state.selectedShotId !== null);
+  const shotSheetVisible = shotTypeSheetOpen;
 
   function handleShotTypeSelect(type: ShotType) {
-    setShotSheetDismissed(true);
+    setShotTypeSheetOpen(false);
     dispatch({ type: 'SET_SHOT_TYPE', shotType: type });
     if (state.selectedShotId !== null) {
       dispatch({ type: 'SELECT_SHOT', id: null });
@@ -52,7 +46,7 @@ export function App() {
   }
 
   function handleCloseShotSheet() {
-    setShotSheetDismissed(true);
+    setShotTypeSheetOpen(false);
     if (state.shotPhase.status === 'awaiting') {
       dispatch({ type: 'UNDO_LAST' });
     } else if (state.selectedShotId !== null) {
@@ -80,7 +74,13 @@ export function App() {
           isAwaitingReturn={isAwaitingReturn}
           containerRef={containerRef}
         >
-          <SvgLayer state={state} dispatch={dispatch} draggingTo={receiverDragPos} containerRef={containerRef} />
+          <SvgLayer
+            state={state}
+            dispatch={dispatch}
+            draggingTo={receiverDragPos}
+            containerRef={containerRef}
+            onShotMarkerClick={() => setShotTypeSheetOpen(true)}
+          />
           <CharIcon
             ref={p1Ref}
             charName={state.p1CharName}
@@ -98,12 +98,11 @@ export function App() {
         <EditPanel
           state={state}
           dispatch={dispatch}
-          onShotSelect={() => setShotSheetDismissed(false)}
           onShotButtonClick={() => {
             if (state.selectedShotId === null && state.rallySteps.length > 0) {
               dispatch({ type: 'SELECT_SHOT', id: state.rallySteps[state.rallySteps.length - 1].id });
             }
-            setShotSheetDismissed(false);
+            setShotTypeSheetOpen(true);
           }}
           onP1Click={() => { setSelectingPlayer('p1'); setCharSheetOpen(true); }}
           onP2Click={() => { setSelectingPlayer('p2'); setCharSheetOpen(true); }}

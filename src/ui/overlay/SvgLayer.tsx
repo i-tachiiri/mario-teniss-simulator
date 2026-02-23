@@ -14,9 +14,10 @@ interface Props {
   dispatch: React.Dispatch<GameAction>;
   draggingTo: { x: number; y: number } | null;
   containerRef: RefObject<HTMLDivElement | null>;
+  onShotMarkerClick: () => void;
 }
 
-export function SvgLayer({ state, dispatch, draggingTo, containerRef }: Props) {
+export function SvgLayer({ state, dispatch, draggingTo, containerRef, onShotMarkerClick }: Props) {
   const selectedShot =
     state.selectedShotId != null ? (state.rallySteps.find(s => s.id === state.selectedShotId) ?? null) : null;
   const lastShot = state.rallySteps.length > 0 ? state.rallySteps[state.rallySteps.length - 1] : null;
@@ -69,8 +70,26 @@ export function SvgLayer({ state, dispatch, draggingTo, containerRef }: Props) {
 
       {shotToShow && (
         <>
-          <ShotMarker x={shotToShow.hitFrom.x} y={shotToShow.hitFrom.y} color={SHOT_CONFIGS[shotToShow.type].color} />
-          <ShotMarker x={shotToShow.bounceAt.x} y={shotToShow.bounceAt.y} color="#ef4444" />
+          <ShotMarker
+            x={shotToShow.hitFrom.x}
+            y={shotToShow.hitFrom.y}
+            color={SHOT_CONFIGS[shotToShow.type].color}
+            clickable
+            onClick={e => {
+              e.stopPropagation();
+              onShotMarkerClick();
+            }}
+          />
+          <ShotMarker
+            x={shotToShow.bounceAt.x}
+            y={shotToShow.bounceAt.y}
+            color="#ef4444"
+            clickable
+            onClick={e => {
+              e.stopPropagation();
+              onShotMarkerClick();
+            }}
+          />
           {finalVisual?.secondBounceAt && (
             <ShotMarker x={finalVisual.secondBounceAt.x} y={finalVisual.secondBounceAt.y} color="#ef4444" />
           )}
@@ -87,8 +106,26 @@ export function SvgLayer({ state, dispatch, draggingTo, containerRef }: Props) {
 
       {state.shotPhase.status === 'awaiting' && (
         <>
-          <ShotMarker x={state.shotPhase.hitFrom.x} y={state.shotPhase.hitFrom.y} color={SHOT_CONFIGS[state.selectedShotType].color} />
-          <ShotMarker x={state.shotPhase.bounceAt.x} y={state.shotPhase.bounceAt.y} color="#ef4444" />
+          <ShotMarker
+            x={state.shotPhase.hitFrom.x}
+            y={state.shotPhase.hitFrom.y}
+            color={SHOT_CONFIGS[state.selectedShotType].color}
+            clickable
+            onClick={e => {
+              e.stopPropagation();
+              onShotMarkerClick();
+            }}
+          />
+          <ShotMarker
+            x={state.shotPhase.bounceAt.x}
+            y={state.shotPhase.bounceAt.y}
+            color="#ef4444"
+            clickable
+            onClick={e => {
+              e.stopPropagation();
+              onShotMarkerClick();
+            }}
+          />
           {state.shotPhase.starPos && (
             <StarMarker
               x={state.shotPhase.starPos.x}

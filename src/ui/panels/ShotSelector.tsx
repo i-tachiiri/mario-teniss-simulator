@@ -5,10 +5,9 @@ import type { GameAction } from '../../state/actions/gameActions';
 interface Props {
   state: GameStateData;
   dispatch: React.Dispatch<GameAction>;
-  onShotSelect: () => void;
 }
 
-export function ShotSelector({ state, dispatch, onShotSelect }: Props) {
+export function ShotSelector({ state, dispatch }: Props) {
   const hasPending = state.shotPhase.status === 'awaiting';
   const [reorderMode, setReorderMode] = useState(false);
   const timerRef = useRef<number | null>(null);
@@ -40,7 +39,6 @@ export function ShotSelector({ state, dispatch, onShotSelect }: Props) {
             }}
             onClick={() => {
               dispatch({ type: 'SELECT_SHOT', id: shot.id });
-              onShotSelect();
             }}
           >
             {idx + 1}
