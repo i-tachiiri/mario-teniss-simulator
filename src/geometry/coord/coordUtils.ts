@@ -1,4 +1,4 @@
-import type { Position } from '../../types';
+import type { PixelPos, Position } from '../../types';
 
 /**
  * コンテナ要素に対する el の中心座標と行・列インデックスを返す。
@@ -29,4 +29,11 @@ export function getRelativePos(
 ): { x: number; y: number } {
   const r = container.getBoundingClientRect();
   return { x: clientX - r.left, y: clientY - r.top };
+}
+
+/**
+ * Position（グリッド由来）から描画計算用の PixelPos（px）へ明示変換する。
+ */
+export function positionToPixelPos(pos: Pick<Position, 'x' | 'y'>): PixelPos {
+  return { x: pos.x, y: pos.y };
 }

@@ -1,8 +1,8 @@
-import type { PixelPos, Position } from '../../types';
+import type { PixelPos } from '../../types';
 
 export function projectToRayFromBounce(
   hitFrom: PixelPos,
-  bounceAt: Position,
+  bounceAt: PixelPos,
   iconX: number,
   iconY: number,
 ): PixelPos {
