@@ -33,7 +33,7 @@ export function SvgLayer({ state, dispatch, draggingTo, containerRef, onShotMark
         bounce1: { x: shotToShow.bounceAt.x, y: shotToShow.bounceAt.y },
         returnAt: shotToShow.returnAt,
         type: shotToShow.type,
-        curveLevel: shotToShow.curveLevel,
+        bendLevel: shotToShow.curveLevel,
         baseCurve: SHOT_CONFIGS[shotToShow.type].curveAmount,
         containerSize: size,
       })
@@ -51,7 +51,7 @@ export function SvgLayer({ state, dispatch, draggingTo, containerRef, onShotMark
           </filter>
         </defs>
 
-        {shotToShow && finalVisual && <ShotPath type={shotToShow.type} pathD={finalVisual.pathD} />}
+        {shotToShow && finalVisual && <ShotPath type={shotToShow.type} pathD={finalVisual.d} />}
 
         {state.shotPhase.status === 'awaiting' && (
           <ShotPreviewPath
@@ -90,9 +90,9 @@ export function SvgLayer({ state, dispatch, draggingTo, containerRef, onShotMark
               onShotMarkerClick();
             }}
           />
-          {finalVisual?.secondBounceAt && (
-            <ShotMarker x={finalVisual.secondBounceAt.x} y={finalVisual.secondBounceAt.y} color="#ef4444" />
-          )}
+          {finalVisual?.markers.slice(1).map((marker, idx) => (
+            <ShotMarker key={`extra-bounce-${idx}`} x={marker.x} y={marker.y} color="#ef4444" />
+          ))}
           {shotToShow.starPos && (
             <StarMarker
               x={shotToShow.starPos.x}
