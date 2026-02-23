@@ -5,7 +5,6 @@ import type { ShotType, ShotConfig } from './types';
 export const ICON_HALF_SIZE = 22;
 
 export const GRID_LABELS: string[][] = [
-  ['T', 'S', 'R', 'Q', 'P', 'O'],
   ['N', 'L', 'K', 'J', 'I', 'M'],
   ['H', '16', '15', '14', '13', 'G'],
   ['F', '12', '11', '10', '9', 'E'],
