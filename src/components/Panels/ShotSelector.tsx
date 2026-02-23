@@ -4,7 +4,7 @@ import type { GameAction } from '../../state/gameActions';
 interface Props {
   state: GameStateData;
   dispatch: React.Dispatch<GameAction>;
-  onShotSelect: (id: number) => void;
+  onShotSelect: () => void;
 }
 
 export function ShotSelector({ state, dispatch, onShotSelect }: Props) {
@@ -14,7 +14,7 @@ export function ShotSelector({ state, dispatch, onShotSelect }: Props) {
 
   return (
     <div className="flex gap-1.5 flex-wrap items-center">
-      <span className="text-[9px] text-slate-400 font-bold">Shot:</span>
+      <span className="text-[9px] text-slate-400 font-bold">Scene:</span>
 
       {state.rallySteps.map((shot, idx) => {
         const active = shot.id === state.selectedShotId;
@@ -28,7 +28,7 @@ export function ShotSelector({ state, dispatch, onShotSelect }: Props) {
             }`}
             onClick={() => {
               dispatch({ type: 'SELECT_SHOT', id: shot.id });
-              onShotSelect(shot.id);
+              onShotSelect();
             }}
           >
             {idx + 1}

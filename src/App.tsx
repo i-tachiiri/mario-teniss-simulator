@@ -71,7 +71,7 @@ export function App() {
     <div className="bg-slate-700 min-h-screen font-sans">
       <div className="max-w-md mx-auto flex flex-col gap-3 px-2 py-3 pb-8">
         <h1 className="text-lg font-black text-center text-white tracking-tighter">
-          <span className="text-blue-400">MTFEVER</span>
+          <span className="text-blue-400">MT-FEVER</span>
         </h1>
 
         <Court
@@ -99,6 +99,7 @@ export function App() {
           state={state}
           dispatch={dispatch}
           onShotSelect={() => setShotSheetDismissed(false)}
+          onShotButtonClick={() => setShotSheetDismissed(false)}
           onP1Click={() => { setSelectingPlayer('p1'); setCharSheetOpen(true); }}
           onP2Click={() => { setSelectingPlayer('p2'); setCharSheetOpen(true); }}
         />
