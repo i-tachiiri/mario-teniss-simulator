@@ -47,9 +47,7 @@ export function App() {
 
   function handleCloseShotSheet() {
     setShotTypeSheetOpen(false);
-    if (state.shotPhase.status === 'awaiting') {
-      dispatch({ type: 'UNDO_LAST' });
-    } else if (state.selectedShotId !== null) {
+    if (state.selectedShotId !== null) {
       dispatch({ type: 'SELECT_SHOT', id: null });
     }
   }
@@ -63,11 +61,7 @@ export function App() {
 
   return (
     <div className="bg-slate-700 min-h-screen font-sans">
-      <div className="max-w-md mx-auto flex flex-col gap-3 px-2 py-3 pb-8">
-        <h1 className="text-lg font-black text-center text-white tracking-tighter">
-          <span className="text-blue-400">MT-FEVER</span>
-        </h1>
-
+      <div className="max-w-md mx-auto flex flex-col gap-3 px-2 py-2 pb-6">
         <Court
           state={state}
           dispatch={dispatch}
@@ -106,6 +100,7 @@ export function App() {
           }}
           onP1Click={() => { setSelectingPlayer('p1'); setCharSheetOpen(true); }}
           onP2Click={() => { setSelectingPlayer('p2'); setCharSheetOpen(true); }}
+          containerRef={containerRef}
         />
       </div>
 

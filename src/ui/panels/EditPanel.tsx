@@ -1,6 +1,7 @@
 import type { GameStateData } from '../../state/reducers/gameReducer';
 import type { GameAction } from '../../state/actions/gameActions';
 import { ShotSelector } from './ShotSelector';
+import { toPng } from 'html-to-image';
 
 interface Props {
   state: GameStateData;
@@ -8,84 +9,168 @@ interface Props {
   onShotButtonClick: () => void;
   onP1Click: () => void;
   onP2Click: () => void;
+  containerRef: React.RefObject<HTMLDivElement | null>;
 }
 
-export function EditPanel({ state, dispatch, onShotButtonClick, onP1Click, onP2Click }: Props) {
-  const pendingPhase = state.shotPhase.status === 'awaiting' ? state.shotPhase : null;
+function IconUndo() {
+  return (
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 7h10a6 6 0 0 1 0 12H7" />
+      <polyline points="3,3 3,7 7,7" />
+    </svg>
+  );
+}
+
+function IconDownload() {
+  return (
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 3v12m0 0l-4-4m4 4l4-4" />
+      <rect x="3" y="17" width="18" height="4" rx="1" />
+    </svg>
+  );
+}
+
+function IconTrash() {
+  return (
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="3,6 5,6 21,6" />
+      <path d="M19 6l-1 14H6L5 6" />
+      <path d="M10 11v6m4-6v6" />
+      <path d="M9 6V4h6v2" />
+    </svg>
+  );
+}
+
+function IconCurveLeft() {
+  return (
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20 20 Q2 16 6 4" />
+      <polyline points="8,9 6,4 2,7" />
+    </svg>
+  );
+}
+
+function IconCurveRight() {
+  return (
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4 20 Q22 16 18 4" />
+      <polyline points="16,9 18,4 22,7" />
+    </svg>
+  );
+}
+
+export function EditPanel({ state, dispatch, onShotButtonClick, onP1Click, onP2Click, containerRef }: Props) {
+  async function handleDownload() {
+    if (!containerRef.current) return;
+    const el = containerRef.current;
+    const prev = el.style.boxShadow;
+    el.style.boxShadow = 'none';
+    try {
+      const dataUrl = await toPng(el, { pixelRatio: 2 });
+      const link = document.createElement('a');
+      link.download = 'rally.png';
+      link.href = dataUrl;
+      link.click();
+    } finally {
+      el.style.boxShadow = prev;
+    }
+  }
+
   const currentShot =
     state.selectedShotId != null
       ? state.rallySteps.find(s => s.id === state.selectedShotId)
       : state.rallySteps[state.rallySteps.length - 1];
-  const hasStar = pendingPhase ? !!pendingPhase.starPos : !!currentShot?.starPos;
-  const starDisabled = !pendingPhase && !currentShot;
+  const hasStar = !!currentShot?.starPos;
+  const starDisabled = !currentShot;
+
+  const iconBtn = 'w-11 h-11 rounded-xl flex items-center justify-center transition-colors duration-150';
+  const iconBtnBase = `${iconBtn} bg-slate-700 hover:bg-slate-600 text-slate-300`;
+  const iconBtnDanger = `${iconBtn} bg-slate-700 hover:bg-rose-700 text-slate-400 hover:text-rose-200`;
 
   return (
     <div className="flex flex-col gap-2">
-      <div className="bg-white rounded-2xl p-3 shadow flex flex-col gap-2">
-        <div className="flex gap-1.5 items-center flex-wrap">
+      <div className="bg-slate-800 rounded-2xl px-3 py-3 shadow-lg flex flex-col gap-2.5">
+
+        {/* Row 1: Shot controls */}
+        <div className="flex items-center gap-2">
+          <button
+            className="flex-1 h-11 bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white rounded-xl text-xs font-black tracking-widest transition-colors duration-150"
+            onClick={onShotButtonClick}
+          >
+            SHOT
+          </button>
+
           <button
             disabled={starDisabled}
-            className={`h-9 min-w-10 px-2.5 text-base rounded-lg font-black border shadow-sm ${
-              hasStar ? 'bg-yellow-300 text-yellow-900 border-yellow-500' : 'bg-yellow-100 text-yellow-700 border-yellow-400'
-            } ${starDisabled ? 'opacity-30' : 'hover:brightness-95'}`}
+            className={`${iconBtn} text-lg transition-colors duration-150 ${
+              hasStar
+                ? 'bg-yellow-400 text-yellow-900 hover:bg-yellow-300'
+                : 'bg-slate-700 text-slate-500 hover:bg-slate-600 hover:text-yellow-400'
+            } ${starDisabled ? 'opacity-30 pointer-events-none' : ''}`}
             onClick={e => {
               e.stopPropagation();
-              if (pendingPhase) {
-                dispatch({ type: 'SET_PENDING_STAR', pos: hasStar ? null : pendingPhase.bounceAt });
-              } else if (currentShot) {
+              if (currentShot) {
                 dispatch({ type: 'SET_STAR_POS', id: currentShot.id, pos: hasStar ? null : currentShot.bounceAt });
               }
             }}
           >
             ★
           </button>
-          <button className="h-9 min-w-16 px-2 text-[10px] bg-slate-100 text-slate-600 border border-slate-300 rounded-lg font-bold" onClick={onShotButtonClick}>SHOT</button>
-          <button className="h-9 min-w-16 px-2 text-[9px] bg-slate-100 text-slate-600 border border-slate-300 rounded-lg font-bold" onClick={onP1Click}>自分</button>
-          <button className="h-9 min-w-16 px-2 text-[9px] bg-slate-100 text-slate-600 border border-slate-300 rounded-lg font-bold" onClick={onP2Click}>相手</button>
+
           <button
-            className="h-9 min-w-16 px-2 text-[10px] bg-white border border-slate-300 text-slate-600 rounded-lg font-bold"
-            onClick={e => {
-              e.stopPropagation();
-              dispatch({ type: 'SET_SHOT_CURVE', delta: -1 });
-            }}
+            title="右→左に曲げる"
+            className={iconBtnBase}
+            onClick={e => { e.stopPropagation(); dispatch({ type: 'SET_SHOT_CURVE', delta: -1 }); }}
           >
-            ⤺ 右→左
+            <IconCurveLeft />
           </button>
+
           <button
-            className="h-9 min-w-16 px-2 text-[10px] bg-white border border-slate-300 text-slate-600 rounded-lg font-bold"
-            onClick={e => {
-              e.stopPropagation();
-              dispatch({ type: 'SET_SHOT_CURVE', delta: 1 });
-            }}
+            title="左→右に曲げる"
+            className={iconBtnBase}
+            onClick={e => { e.stopPropagation(); dispatch({ type: 'SET_SHOT_CURVE', delta: 1 }); }}
           >
-            ⤻ 左→右
+            <IconCurveRight />
           </button>
-          <button className="h-9 min-w-9 px-2 text-sm bg-rose-50 border border-rose-300 text-rose-600 rounded-lg font-bold" onClick={() => dispatch({ type: 'DELETE_SELECTED_SCENE' })}>🗑</button>
-          <button className="h-9 min-w-16 px-2.5 text-xs bg-white border border-slate-300 text-slate-600 rounded-lg font-bold" onClick={() => dispatch({ type: 'UNDO_LAST' })}>戻す</button>
         </div>
 
-        <ShotSelector state={state} dispatch={dispatch} />
+        {/* Row 2: Players + utility */}
+        <div className="flex items-center gap-2">
+          <button
+            className="flex-1 h-11 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-xl text-xs font-bold tracking-wide transition-colors duration-150"
+            onClick={onP1Click}
+          >
+            自分
+          </button>
+          <button
+            className="flex-1 h-11 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-xl text-xs font-bold tracking-wide transition-colors duration-150"
+            onClick={onP2Click}
+          >
+            相手
+          </button>
 
-        <div className="flex flex-col gap-1">
-          <label className="text-[10px] font-bold text-slate-500">字幕</label>
-          <input
-            value={state.subtitleDraft}
-            onChange={e => {
-              const subtitle = e.target.value;
-              dispatch({ type: 'SET_SUBTITLE_DRAFT', subtitle });
-              if (state.selectedShotId !== null) {
-                dispatch({ type: 'SET_SCENE_SUBTITLE', id: state.selectedShotId, subtitle });
-              }
-            }}
-            className="h-9 px-2 rounded-lg border border-slate-300 text-xs"
-            placeholder="字幕を入力"
-          />
+          <div className="w-px h-7 bg-slate-600 mx-0.5" />
+
+          <button title="元に戻す" className={iconBtnBase} onClick={() => dispatch({ type: 'UNDO_LAST' })}>
+            <IconUndo />
+          </button>
+          <button title="画像を保存" className={`${iconBtn} bg-slate-700 hover:bg-sky-700 text-slate-300 hover:text-sky-100 transition-colors duration-150`} onClick={handleDownload}>
+            <IconDownload />
+          </button>
+          <button title="シーンを削除" className={iconBtnDanger} onClick={() => dispatch({ type: 'DELETE_SELECTED_SCENE' })}>
+            <IconTrash />
+          </button>
         </div>
 
-        <button className="text-[10px] text-slate-400 hover:text-rose-500 underline font-bold text-right transition-colors" onClick={() => dispatch({ type: 'RESET_ALL' })}>
+        <button
+          className="text-[10px] text-slate-600 hover:text-rose-400 font-bold text-right transition-colors duration-150"
+          onClick={() => dispatch({ type: 'RESET_ALL' })}
+        >
           全てリセット
         </button>
       </div>
+
+      <ShotSelector state={state} dispatch={dispatch} />
     </div>
   );
 }

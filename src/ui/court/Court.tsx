@@ -51,49 +51,28 @@ export function Court({ state, dispatch, isAwaitingReturn, containerRef, childre
   }, []);
 
 
-  const subtitle = state.selectedShotId !== null
-    ? state.rallySteps.find(s => s.id === state.selectedShotId)?.subtitle ?? state.subtitleDraft
-    : state.subtitleDraft;
-
-  // ドラッグ中のみ非アクティブ側をdim
+// ドラッグ中のみ非アクティブ側をdim
   const activeSideForDim = isAwaitingReturn ? state.activeSide : null;
 
-  let topLabelClass: string;
-  let bottomLabelClass: string;
-
-  if (isAwaitingReturn) {
-    const activeClass = 'text-xs font-black tracking-widest transition-all duration-300 text-yellow-300 opacity-100';
-    const inactiveClass = 'text-xs font-black tracking-widest transition-all duration-300 text-white opacity-20';
-    topLabelClass = `mb-1 ${state.activeSide === 'top' ? activeClass : inactiveClass}`;
-    bottomLabelClass = `mt-1 ${state.activeSide === 'bottom' ? activeClass : inactiveClass}`;
-  } else {
-    topLabelClass = 'text-xs font-black mb-1 opacity-80 text-white tracking-widest transition-all duration-300';
-    bottomLabelClass = 'text-xs font-black mt-1 opacity-80 text-white tracking-widest transition-all duration-300';
-  }
 
   return (
-    <div ref={containerRef} className="relative flex flex-col items-center court-container-bg">
-      {subtitle && (
-        <div className="absolute top-2 left-1/2 -translate-x-1/2 z-40 max-w-[90%] px-3 py-1 rounded bg-black/70 text-white text-xs font-black tracking-wide text-center">
-          {subtitle}
-        </div>
-      )}
-      <div className={topLabelClass}>↑ 相手 (P2)</div>
-      <CourtGrid
-        rowStart={0}
-        containerRef={containerRef}
-        dispatch={dispatch}
-        isActive={activeSideForDim === null ? null : activeSideForDim === 'top'}
-      />
-      <NetDivider />
-      <CourtGrid
-        rowStart={5}
-        containerRef={containerRef}
-        dispatch={dispatch}
-        isActive={activeSideForDim === null ? null : activeSideForDim === 'bottom'}
-      />
-      <div className={bottomLabelClass}>↓ 自分 (P1)</div>
-      {children}
+    <div className="w-full flex flex-col">
+      <div ref={containerRef} className="relative flex flex-col items-center court-container-bg">
+        <CourtGrid
+          rowStart={0}
+          containerRef={containerRef}
+          dispatch={dispatch}
+          isActive={activeSideForDim === null ? null : activeSideForDim === 'top'}
+        />
+        <NetDivider />
+        <CourtGrid
+          rowStart={5}
+          containerRef={containerRef}
+          dispatch={dispatch}
+          isActive={activeSideForDim === null ? null : activeSideForDim === 'bottom'}
+        />
+        {children}
+      </div>
     </div>
   );
 }

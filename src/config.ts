@@ -22,12 +22,12 @@ export const GRID_LABELS: string[][] = [
 
 export const SHOT_CONFIGS: Record<ShotType, ShotConfig> = {
   'strong-flat': { color: '#9370DB', width: 7, curveAmount: 0 },
-  'strong-top': { color: '#FFA500', width: 7, curveAmount: 20 },
-  'strong-slice': { color: '#6495ED', width: 7, curveAmount: -10 },
-  'drop': { color: '#888888', width: 3, curveAmount: 15 },
+  'strong-top': { color: '#FFA500', width: 7, curveAmount: 0 },
+  'strong-slice': { color: '#6495ED', width: 7, curveAmount: 0 },
+  'drop': { color: '#d4d4d4', width: 7, curveAmount: 0 },
   'weak-flat': { color: '#9370DB', width: 3, curveAmount: 0 },
-  'weak-top': { color: '#FFA500', width: 3, curveAmount: 15 },
-  'weak-slice': { color: '#6495ED', width: 3, curveAmount: -5 },
-  'lob': { color: '#F0E68C', width: 4, dashed: true, curveAmount: 50 },
-  'jump': { color: '#aaaaaa', width: 2, dashed: true, curveAmount: 10 },
+  'weak-top': { color: '#FFA500', width: 3, curveAmount: 0 },
+  'weak-slice': { color: '#6495ED', width: 3, curveAmount: 0 },
+  'lob': { color: '#F0E68C', width: 4, dashed: true, curveAmount: 0 },
+  'jump': { color: '#aaaaaa', width: 2, dashed: true, curveAmount: 0 },
 };
