@@ -25,7 +25,7 @@ export function SubtitleBar({ state, dispatch }: Props) {
         className="w-full bg-transparent text-white resize-none outline-none placeholder-white/35 font-bold text-center text-base pt-3"
         value={state.subtitleDraft}
         onChange={handleChange}
-        placeholder="字幕を入力…"
+        placeholder="コメントを入力…"
       />
     </div>
   );

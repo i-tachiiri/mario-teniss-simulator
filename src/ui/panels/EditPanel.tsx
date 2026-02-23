@@ -65,6 +65,9 @@ export function EditPanel({ state, dispatch, onShotButtonClick, onP1Click, onP2C
     const el = containerRef.current;
     const prev = el.style.boxShadow;
     el.style.boxShadow = 'none';
+    const textarea = el.querySelector('textarea');
+    const prevPlaceholder = textarea?.getAttribute('placeholder') ?? '';
+    textarea?.setAttribute('placeholder', '');
     try {
       const dataUrl = await toPng(el, { pixelRatio: 2 });
       const link = document.createElement('a');
@@ -73,6 +76,7 @@ export function EditPanel({ state, dispatch, onShotButtonClick, onP1Click, onP2C
       link.click();
     } finally {
       el.style.boxShadow = prev;
+      textarea?.setAttribute('placeholder', prevPlaceholder);
     }
   }
 
