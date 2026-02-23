@@ -7,6 +7,7 @@ import { ShotPreviewPath } from './ShotPreviewPath';
 import { ShotMarker } from './ShotMarker';
 import { ForeBackLabel } from './ForeBackLabel';
 import { StarMarker } from './StarMarker';
+import { computeSceneVisual } from '../../geometry/shotGeometry';
 
 interface Props {
   state: GameStateData;
@@ -17,49 +18,52 @@ interface Props {
 
 export function SvgLayer({ state, dispatch, draggingTo, containerRef }: Props) {
   const selectedShot =
-    state.selectedShotId != null
-      ? (state.rallySteps.find(s => s.id === state.selectedShotId) ?? null)
-      : null;
+    state.selectedShotId != null ? (state.rallySteps.find(s => s.id === state.selectedShotId) ?? null) : null;
   const lastShot = state.rallySteps.length > 0 ? state.rallySteps[state.rallySteps.length - 1] : null;
   const shotToShow = selectedShot ?? (state.shotPhase.status === 'awaiting' ? null : lastShot);
 
+  const size = containerRef.current
+    ? { width: containerRef.current.clientWidth, height: containerRef.current.clientHeight }
+    : undefined;
+
+  const finalVisual = shotToShow
+    ? computeSceneVisual({
+        hitFrom: shotToShow.hitFrom,
+        bounce1: { x: shotToShow.bounceAt.x, y: shotToShow.bounceAt.y },
+        returnAt: shotToShow.returnAt,
+        type: shotToShow.type,
+        curveLevel: shotToShow.curveLevel,
+        baseCurve: SHOT_CONFIGS[shotToShow.type].curveAmount,
+        containerSize: size,
+      })
+    : null;
+
   return (
     <>
-      <svg
-        className="absolute top-0 left-0 w-full h-full pointer-events-none"
-        style={{ zIndex: 30 }}
-      >
+      <svg className="absolute top-0 left-0 w-full h-full pointer-events-none" style={{ zIndex: 30 }}>
         <defs>
           <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
             <feGaussianBlur in="SourceAlpha" stdDeviation="2" />
             <feOffset dx="1" dy="2" result="offsetblur" />
-            <feComponentTransfer>
-              <feFuncA type="linear" slope="0.3" />
-            </feComponentTransfer>
-            <feMerge>
-              <feMergeNode />
-              <feMergeNode in="SourceGraphic" />
-            </feMerge>
+            <feComponentTransfer><feFuncA type="linear" slope="0.3" /></feComponentTransfer>
+            <feMerge><feMergeNode /><feMergeNode in="SourceGraphic" /></feMerge>
           </filter>
         </defs>
 
-        {shotToShow?.ballPathD && <ShotPath type={shotToShow.type} pathD={shotToShow.ballPathD} />}
+        {shotToShow && finalVisual && <ShotPath type={shotToShow.type} pathD={finalVisual.pathD} />}
 
         {state.shotPhase.status === 'awaiting' && (
           <ShotPreviewPath
             hitFrom={state.shotPhase.hitFrom}
-            bounceAt={state.shotPhase.bounceAt}
+            bounceAt={{ x: state.shotPhase.bounceAt.x, y: state.shotPhase.bounceAt.y }}
             type={state.selectedShotType}
             dragPos={draggingTo ?? undefined}
+            curveLevel={state.shotPhase.curveLevel}
           />
         )}
 
         {shotToShow && (
-          <ForeBackLabel
-            x={shotToShow.returnAt.x}
-            y={shotToShow.returnAt.y}
-            shotSide={shotToShow.shotSide}
-          />
+          <ForeBackLabel x={shotToShow.returnAt.x} y={shotToShow.returnAt.y} shotSide={shotToShow.shotSide} />
         )}
       </svg>
 
@@ -67,6 +71,9 @@ export function SvgLayer({ state, dispatch, draggingTo, containerRef }: Props) {
         <>
           <ShotMarker x={shotToShow.hitFrom.x} y={shotToShow.hitFrom.y} color={SHOT_CONFIGS[shotToShow.type].color} />
           <ShotMarker x={shotToShow.bounceAt.x} y={shotToShow.bounceAt.y} color="#ef4444" />
+          {finalVisual?.secondBounceAt && (
+            <ShotMarker x={finalVisual.secondBounceAt.x} y={finalVisual.secondBounceAt.y} color="#ef4444" />
+          )}
           {shotToShow.starPos && (
             <StarMarker
               x={shotToShow.starPos.x}
@@ -80,16 +87,8 @@ export function SvgLayer({ state, dispatch, draggingTo, containerRef }: Props) {
 
       {state.shotPhase.status === 'awaiting' && (
         <>
-          <ShotMarker
-            x={state.shotPhase.hitFrom.x}
-            y={state.shotPhase.hitFrom.y}
-            color={SHOT_CONFIGS[state.selectedShotType].color}
-          />
-          <ShotMarker
-            x={state.shotPhase.bounceAt.x}
-            y={state.shotPhase.bounceAt.y}
-            color="#ef4444"
-          />
+          <ShotMarker x={state.shotPhase.hitFrom.x} y={state.shotPhase.hitFrom.y} color={SHOT_CONFIGS[state.selectedShotType].color} />
+          <ShotMarker x={state.shotPhase.bounceAt.x} y={state.shotPhase.bounceAt.y} color="#ef4444" />
           {state.shotPhase.starPos && (
             <StarMarker
               x={state.shotPhase.starPos.x}
