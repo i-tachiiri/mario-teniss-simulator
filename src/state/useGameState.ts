@@ -1,7 +1,6 @@
 import { useReducer } from 'react';
-import { gameReducer, initialState } from './gameReducer';
-import type { GameStateData } from './gameReducer';
-import type { GameAction } from './gameActions';
+import { gameReducer, initialState, type GameStateData } from './reducers/gameReducer';
+import type { GameAction } from './actions/gameActions';
 
 export interface GameStateHook {
   state: GameStateData;
@@ -17,10 +16,7 @@ export function useGameState(): GameStateHook {
 
   const isAwaitingReturn = state.shotPhase.status === 'awaiting';
 
-  const canReposition =
-    !isAwaitingReturn &&
-    state.rallySteps.length > 0 &&
-    state.selectedShotId === null;
+  const canReposition = !isAwaitingReturn && state.rallySteps.length > 0 && state.selectedShotId === null;
 
   return { state, dispatch, isAwaitingReturn, canReposition };
 }

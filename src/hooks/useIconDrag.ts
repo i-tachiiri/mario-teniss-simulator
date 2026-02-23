@@ -1,6 +1,6 @@
 import { useState, type RefObject } from 'react';
 import { useDragIcon } from './useDragIcon';
-import type { GameAction } from '../state/gameActions';
+import type { GameAction } from '../state/actions/gameActions';
 
 interface UseIconDragOptions {
   containerRef: RefObject<HTMLDivElement | null>;
