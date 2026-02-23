@@ -1,18 +1,15 @@
 import { useEffect, type RefObject } from 'react';
-import type { GameStateData } from '../../state/reducers/gameReducer';
 import type { GameAction } from '../../state/actions/gameActions';
 import { CourtGrid } from './CourtGrid';
 import { NetDivider } from './NetDivider';
 
 interface Props {
-  state: GameStateData;
   dispatch: React.Dispatch<GameAction>;
-  isAwaitingReturn: boolean;
   containerRef: RefObject<HTMLDivElement | null>;
   children?: React.ReactNode;
 }
 
-export function Court({ state, dispatch, isAwaitingReturn, containerRef, children }: Props) {
+export function Court({ dispatch, containerRef, children }: Props) {
   // デフォルト位置（P1=row9,col2 / P2=row0,col3）を初回マウント時に設定。
   // useEffect は DOM ペイント後に実行されるので getBoundingClientRect が正確に取れる。
   // dispatch が同じ値で2回呼ばれても reducer は冪等なので StrictMode でも問題なし。
@@ -51,10 +48,6 @@ export function Court({ state, dispatch, isAwaitingReturn, containerRef, childre
   }, []);
 
 
-// ドラッグ中のみ非アクティブ側をdim
-  const activeSideForDim = isAwaitingReturn ? state.activeSide : null;
-
-
   return (
     <div className="w-full flex flex-col">
       <div ref={containerRef} className="relative flex flex-col items-center court-container-bg">
@@ -62,14 +55,14 @@ export function Court({ state, dispatch, isAwaitingReturn, containerRef, childre
           rowStart={0}
           containerRef={containerRef}
           dispatch={dispatch}
-          isActive={activeSideForDim === null ? null : activeSideForDim === 'top'}
+          isActive={null}
         />
         <NetDivider />
         <CourtGrid
           rowStart={5}
           containerRef={containerRef}
           dispatch={dispatch}
-          isActive={activeSideForDim === null ? null : activeSideForDim === 'bottom'}
+          isActive={null}
         />
         {children}
       </div>

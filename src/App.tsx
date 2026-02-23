@@ -63,9 +63,7 @@ export function App() {
     <div className="bg-slate-700 min-h-screen font-sans">
       <div className="max-w-md mx-auto flex flex-col gap-3 px-2 py-2 pb-6">
         <Court
-          state={state}
           dispatch={dispatch}
-          isAwaitingReturn={isAwaitingReturn}
           containerRef={containerRef}
         >
           <SvgLayer
