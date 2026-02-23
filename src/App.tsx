@@ -1,12 +1,12 @@
 import { useRef, useState, useEffect } from 'react';
 import { useGameState } from './state/useGameState';
 import { useIconDrag } from './hooks/useIconDrag';
-import { Court } from './components/Court/Court';
-import { SvgLayer } from './components/Overlay/SvgLayer';
+import { Court } from './ui/court/Court';
+import { SvgLayer } from './ui/overlay/SvgLayer';
 import { CharIcon } from './components/CharIcon';
-import { EditPanel } from './components/Panels/EditPanel';
-import { ShotTypeSheet } from './components/Sheets/ShotTypeSheet';
-import { CharPickerSheet } from './components/Sheets/CharPickerSheet';
+import { EditPanel } from './ui/panels/EditPanel';
+import { ShotTypeSheet } from './ui/sheets/ShotTypeSheet';
+import { CharPickerSheet } from './ui/sheets/CharPickerSheet';
 import type { ShotType } from './types';
 
 export function App() {
