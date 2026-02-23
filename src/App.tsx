@@ -5,6 +5,7 @@ import { Court } from './ui/court/Court';
 import { SvgLayer } from './ui/overlay/SvgLayer';
 import { CharIcon } from './components/CharIcon';
 import { EditPanel } from './ui/panels/EditPanel';
+import { SubtitleBar } from './ui/court/SubtitleBar';
 import { ShotTypeSheet } from './ui/sheets/ShotTypeSheet';
 import { CharPickerSheet } from './ui/sheets/CharPickerSheet';
 import type { ShotType } from './types';
@@ -86,6 +87,8 @@ export function App() {
             pos={state.p2IconPos}
           />
         </Court>
+
+        <SubtitleBar state={state} dispatch={dispatch} />
 
         <EditPanel
           state={state}
