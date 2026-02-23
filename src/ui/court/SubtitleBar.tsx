@@ -11,7 +11,7 @@ export function SubtitleBar({ state, dispatch }: Props) {
     state.selectedShotId ??
     (state.rallySteps.length > 0 ? state.rallySteps[state.rallySteps.length - 1].id : null);
 
-  function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
+  function handleChange(e: React.ChangeEvent<HTMLTextAreaElement>) {
     const text = e.target.value;
     dispatch({ type: 'SET_SUBTITLE_DRAFT', subtitle: text });
     if (currentEditId !== null) {
@@ -20,10 +20,9 @@ export function SubtitleBar({ state, dispatch }: Props) {
   }
 
   return (
-    <div className="absolute bottom-0 left-0 right-0 z-30 flex items-center justify-center px-4" style={{ height: '76px' }}>
-      <input
-        type="text"
-        className="w-full bg-transparent text-white outline-none placeholder-white/35 font-bold text-center text-base"
+    <div className="absolute bottom-0 left-0 right-0 z-30 flex px-4" style={{ height: '76px' }}>
+      <textarea
+        className="w-full bg-transparent text-white resize-none outline-none placeholder-white/35 font-bold text-center text-base pt-3"
         value={state.subtitleDraft}
         onChange={handleChange}
         placeholder="字幕を入力…"
