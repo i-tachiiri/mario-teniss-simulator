@@ -1,9 +1,9 @@
-import type { PixelPos, Position } from '../../types';
+import type { PixelPos } from '../../types';
 import { projectToRayFromBounce } from '../math/projection';
 
 export function computeReturnAndSide(
   hitFrom: PixelPos,
-  bounceAt: Position,
+  bounceAt: PixelPos,
   iconX: number,
   iconY: number,
   activeSide: 'top' | 'bottom',

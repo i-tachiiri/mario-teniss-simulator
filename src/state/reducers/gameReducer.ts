@@ -3,6 +3,7 @@ import type { GameAction } from '../actions/gameActions';
 import { computeBallPathD } from '../../geometry/shot/path';
 import { computeReturnAndSide } from '../../geometry/shot/returnAndSide';
 import { getHitFrom } from '../../geometry/shot/hitFrom';
+import { positionToPixelPos } from '../../geometry/coord';
 
 export interface GameStateData {
   p1Pos: Position | null;
@@ -50,7 +51,7 @@ function autoFinalizePendingShot(state: GameStateData): GameStateData {
   const { bounceAt, hitFrom, starPos: pendingStarPos, curveLevel } = state.shotPhase;
   const { returnAt, shotSide } = computeReturnAndSide(
     hitFrom,
-    bounceAt,
+    positionToPixelPos(bounceAt),
     receiverIconPos.x,
     receiverIconPos.y,
     state.activeSide,
@@ -148,7 +149,7 @@ export function gameReducer(state: GameStateData, action: GameAction): GameState
       const { bounceAt, hitFrom, starPos: pendingStarPos, curveLevel } = state.shotPhase;
       const { returnAt, shotSide } = computeReturnAndSide(
         hitFrom,
-        bounceAt,
+        positionToPixelPos(bounceAt),
         action.iconX,
         action.iconY,
         state.activeSide,
@@ -192,7 +193,7 @@ export function gameReducer(state: GameStateData, action: GameAction): GameState
       const lastShot = state.rallySteps[state.rallySteps.length - 1];
       const { returnAt, shotSide } = computeReturnAndSide(
         lastShot.hitFrom,
-        lastShot.bounceAt,
+        positionToPixelPos(lastShot.bounceAt),
         action.iconX,
         action.iconY,
         lastShot.bounceAt.r >= 5 ? 'bottom' : 'top',
