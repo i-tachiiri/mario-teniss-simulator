@@ -6,32 +6,29 @@ export function computeBallPathD(
   endAt: PixelPos,
   curveAmount: number,
 ): string {
-  const d1 = Math.hypot(bounceAt.x - hitFrom.x, bounceAt.y - hitFrom.y);
-  const d2 = Math.hypot(endAt.x - bounceAt.x, endAt.y - bounceAt.y);
-  const total = d1 + d2;
+  const firstLen = Math.hypot(bounceAt.x - hitFrom.x, bounceAt.y - hitFrom.y);
+  const secondLen = Math.hypot(endAt.x - bounceAt.x, endAt.y - bounceAt.y);
 
-  if (total < 1 || d1 / total < 1e-4 || d1 / total > 1 - 1e-4) {
-    return `M ${hitFrom.x} ${hitFrom.y} L ${endAt.x} ${endAt.y}`;
+  if (firstLen < 1 || secondLen < 1) {
+    return `M ${hitFrom.x} ${hitFrom.y} L ${bounceAt.x} ${bounceAt.y} L ${endAt.x} ${endAt.y}`;
   }
 
-  const t = d1 / total;
-  const denom = 2 * t * (1 - t);
-  let ctrlX = (bounceAt.x - (1 - t) * (1 - t) * hitFrom.x - t * t * endAt.x) / denom;
-  let ctrlY = (bounceAt.y - (1 - t) * (1 - t) * hitFrom.y - t * t * endAt.y) / denom;
+  const m1x = (hitFrom.x + bounceAt.x) / 2;
+  const m1y = (hitFrom.y + bounceAt.y) / 2;
+  const m2x = (bounceAt.x + endAt.x) / 2;
+  const m2y = (bounceAt.y + endAt.y) / 2;
 
-  if (curveAmount !== 0) {
-    const vx = endAt.x - hitFrom.x;
-    const vy = endAt.y - hitFrom.y;
-    const vLen = Math.hypot(vx, vy);
-    if (vLen > 1e-3) {
-      const nx = -vy / vLen;
-      const ny = vx / vLen;
-      ctrlX += nx * curveAmount;
-      ctrlY += ny * curveAmount;
-    }
-  }
+  const n1x = -(bounceAt.y - hitFrom.y) / firstLen;
+  const n1y = (bounceAt.x - hitFrom.x) / firstLen;
+  const n2x = -(endAt.y - bounceAt.y) / secondLen;
+  const n2y = (endAt.x - bounceAt.x) / secondLen;
 
-  return `M ${hitFrom.x} ${hitFrom.y} Q ${ctrlX} ${ctrlY} ${endAt.x} ${endAt.y}`;
+  const c1x = m1x + n1x * curveAmount;
+  const c1y = m1y + n1y * curveAmount;
+  const c2x = m2x + n2x * curveAmount;
+  const c2y = m2y + n2y * curveAmount;
+
+  return `M ${hitFrom.x} ${hitFrom.y} Q ${c1x} ${c1y} ${bounceAt.x} ${bounceAt.y} Q ${c2x} ${c2y} ${endAt.x} ${endAt.y}`;
 }
 
 export function getHitFrom(
@@ -118,7 +115,8 @@ export function computeSceneVisual(
   baseCurve: number,
   containerSize?: { width: number; height: number },
 ): { pathD: string; secondBounceAt?: PixelPos } {
-  const shortDistance = shot.type === 'drop' ? 40 : shot.type === 'jump' ? 120 : null;
+  const cellSize = containerSize ? containerSize.width / 6 : 50;
+  const shortDistance = shot.type === 'drop' ? cellSize : shot.type === 'jump' ? cellSize * 3 : null;
 
   let endAt: PixelPos = shot.returnAt;
   let secondBounceAt: PixelPos | undefined;

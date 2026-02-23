@@ -64,7 +64,7 @@ export function SvgLayer({ state, dispatch, draggingTo, containerRef }: Props) {
           <ShotMarker x={shotToShow.hitFrom.x} y={shotToShow.hitFrom.y} color={SHOT_CONFIGS[shotToShow.type].color} />
           <ShotMarker x={shotToShow.bounceAt.x} y={shotToShow.bounceAt.y} color="#ef4444" />
           {finalVisual?.secondBounceAt && (
-            <ShotMarker x={finalVisual.secondBounceAt.x} y={finalVisual.secondBounceAt.y} color="#f97316" />
+            <ShotMarker x={finalVisual.secondBounceAt.x} y={finalVisual.secondBounceAt.y} color="#ef4444" />
           )}
           {shotToShow.starPos && (
             <StarMarker

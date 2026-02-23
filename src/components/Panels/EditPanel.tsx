@@ -42,8 +42,8 @@ export function EditPanel({ state, dispatch, onShotSelect, onShotButtonClick, on
           <button className="h-9 min-w-16 px-2 text-[10px] bg-slate-100 text-slate-600 border border-slate-300 rounded-lg font-bold" onClick={onShotButtonClick}>SHOT</button>
           <button className="h-9 min-w-16 px-2 text-[9px] bg-slate-100 text-slate-600 border border-slate-300 rounded-lg font-bold" onClick={onP1Click}>自分</button>
           <button className="h-9 min-w-16 px-2 text-[9px] bg-slate-100 text-slate-600 border border-slate-300 rounded-lg font-bold" onClick={onP2Click}>相手</button>
-          <button className="h-9 min-w-9 px-2 text-sm bg-white border border-slate-300 text-slate-600 rounded-lg font-bold" onClick={() => dispatch({ type: 'SET_SHOT_CURVE', delta: -1 })}>↶</button>
-          <button className="h-9 min-w-9 px-2 text-sm bg-white border border-slate-300 text-slate-600 rounded-lg font-bold" onClick={() => dispatch({ type: 'SET_SHOT_CURVE', delta: 1 })}>↷</button>
+          <button className="h-9 min-w-16 px-2 text-[10px] bg-white border border-slate-300 text-slate-600 rounded-lg font-bold" onClick={() => dispatch({ type: 'SET_SHOT_CURVE', delta: -1 })}>⤺ 右→左</button>
+          <button className="h-9 min-w-16 px-2 text-[10px] bg-white border border-slate-300 text-slate-600 rounded-lg font-bold" onClick={() => dispatch({ type: 'SET_SHOT_CURVE', delta: 1 })}>⤻ 左→右</button>
           <button className="h-9 min-w-9 px-2 text-sm bg-rose-50 border border-rose-300 text-rose-600 rounded-lg font-bold" onClick={() => dispatch({ type: 'DELETE_SELECTED_SCENE' })}>🗑</button>
           <button className="h-9 min-w-16 px-2.5 text-xs bg-white border border-slate-300 text-slate-600 rounded-lg font-bold" onClick={() => dispatch({ type: 'UNDO_LAST' })}>戻す</button>
         </div>
