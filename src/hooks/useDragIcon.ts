@@ -6,14 +6,17 @@ interface DragCallbacks {
   onMove?: (x: number, y: number) => void;
   onDrop: (x: number, y: number) => void;
   onClick?: () => void;
+  /** true のとき長押し後にドラッグ開始。短タップは onClick を呼ぶ。 */
+  longPressDrag?: boolean;
 }
+
+const LONG_PRESS_MS = 320;
+const DRAG_START_DIST = 8;
 
 /**
  * ポインターイベントを使ったアイコンドラッグフック。
- * - pointerdown は icon に登録、pointermove / pointerup は document に登録
- *   （元の mousemove/mouseup on document と同じ方式）
- * - ドラッグ中は transition を無効化し、アニメーション遅延を防ぐ
- * - コールバックを useRef に格納し、依存は [enabled, iconRef] のみにする
+ * - longPressDrag=true のとき: 長押し or 一定距離移動でドラッグ開始。短タップは onClick。
+ * - longPressDrag=false (default): pointerdown 直後からドラッグ開始（従来通り）。
  */
 export function useDragIcon(
   iconRef: RefObject<HTMLElement | null>,
@@ -33,6 +36,7 @@ export function useDragIcon(
     let dragging = false;
     let startClientX = 0;
     let startClientY = 0;
+    let longPressTimer: number | null = null;
 
     function getRelPos(clientX: number, clientY: number) {
       const container = cbRef.current.containerRef.current;
@@ -41,20 +45,48 @@ export function useDragIcon(
       return { x: clientX - r.left, y: clientY - r.top };
     }
 
+    function startDrag() {
+      dragging = true;
+      icon!.style.transition = 'none';
+      icon!.style.cursor = 'grabbing';
+    }
+
     function onPointerDown(e: PointerEvent) {
       e.preventDefault();
-      dragging = true;
       startClientX = e.clientX;
       startClientY = e.clientY;
-      icon!.style.transition = 'none'; // ドラッグ中はアニメーション無効
-      icon!.style.cursor = 'grabbing';
+      dragging = false;
+
+      if (cbRef.current.longPressDrag) {
+        longPressTimer = window.setTimeout(() => {
+          longPressTimer = null;
+          startDrag();
+        }, LONG_PRESS_MS);
+      } else {
+        startDrag();
+      }
+
       document.addEventListener('pointermove', onPointerMove, { passive: false });
       document.addEventListener('pointerup', onPointerUp);
     }
 
     function onPointerMove(e: PointerEvent) {
-      if (!dragging) return;
       e.preventDefault();
+      const dist = Math.hypot(e.clientX - startClientX, e.clientY - startClientY);
+
+      if (!dragging) {
+        if (dist > DRAG_START_DIST) {
+          // 長押し待ち中でも一定距離動いたらドラッグ開始
+          if (longPressTimer !== null) {
+            window.clearTimeout(longPressTimer);
+            longPressTimer = null;
+          }
+          startDrag();
+        } else {
+          return;
+        }
+      }
+
       const pos = getRelPos(e.clientX, e.clientY);
       if (!pos) return;
       icon!.style.left = pos.x - ICON_HALF_SIZE + 'px';
@@ -63,25 +95,32 @@ export function useDragIcon(
     }
 
     function onPointerUp(e: PointerEvent) {
-      if (!dragging) return;
-      dragging = false;
-      icon!.style.cursor = '';
-      icon!.style.transition = ''; // transition を元に戻す
+      if (longPressTimer !== null) {
+        window.clearTimeout(longPressTimer);
+        longPressTimer = null;
+      }
+
       document.removeEventListener('pointermove', onPointerMove);
       document.removeEventListener('pointerup', onPointerUp);
+
+      if (!dragging) {
+        // 短タップ: onClick を呼ぶ
+        cbRef.current.onClick?.();
+        return;
+      }
+
+      dragging = false;
+      icon!.style.cursor = '';
+      icon!.style.transition = '';
       const pos = getRelPos(e.clientX, e.clientY);
       if (!pos) return;
-      const dist = Math.hypot(e.clientX - startClientX, e.clientY - startClientY);
-      if (dist < 12 && cbRef.current.onClick) {
-        cbRef.current.onClick();
-      } else {
-        cbRef.current.onDrop(pos.x, pos.y);
-      }
+      cbRef.current.onDrop(pos.x, pos.y);
     }
 
     icon.addEventListener('pointerdown', onPointerDown);
 
     return () => {
+      if (longPressTimer !== null) window.clearTimeout(longPressTimer);
       icon.style.pointerEvents = 'none';
       icon.classList.remove('char-draggable');
       icon.removeEventListener('pointerdown', onPointerDown);

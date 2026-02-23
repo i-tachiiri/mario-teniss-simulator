@@ -8,9 +8,10 @@ interface Props {
   type: ShotType;
   dragPos?: { x: number; y: number };
   curveLevel: number;
+  containerSize?: { width: number; height: number };
 }
 
-export function ShotPreviewPath({ hitFrom, bounceAt, type, dragPos, curveLevel }: Props) {
+export function ShotPreviewPath({ hitFrom, bounceAt, type, dragPos, curveLevel, containerSize }: Props) {
   const config = SHOT_CONFIGS[type];
   const { d } = computeSceneVisual({
     hitFrom,
@@ -19,6 +20,7 @@ export function ShotPreviewPath({ hitFrom, bounceAt, type, dragPos, curveLevel }
     type,
     bendLevel: curveLevel,
     baseCurve: config.curveAmount,
+    containerSize,
   });
 
   return (

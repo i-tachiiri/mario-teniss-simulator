@@ -7,7 +7,8 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "lint": "tsc --noEmit",
-    "test": "tsc --noEmit false --outDir .tmp-test --module NodeNext --moduleResolution NodeNext && node --test tests/gameReducer.test.mjs"
+    "test": "tsc --noEmit false --outDir .tmp-test --module NodeNext --moduleResolution NodeNext && node --test tests/gameReducer.test.mjs",
+    "screenshot": "node scripts/screenshot.mjs"
   },
   "keywords": [],
   "author": "",
@@ -18,11 +19,13 @@
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.1.4",
+    "playwright": "^1.58.2",
     "tailwindcss": "^4.2.0",
     "typescript": "^5.9.3",
     "vite": "^7.3.1"
   },
   "dependencies": {
+    "html-to-image": "^1.11.13",
     "react": "^19.2.4",
     "react-dom": "^19.2.4"
   }

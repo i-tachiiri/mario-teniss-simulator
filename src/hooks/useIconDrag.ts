@@ -58,6 +58,7 @@ export function useIconDrag({
         }
       },
       onClick: onP1Click,
+      longPressDrag: true,
     },
     !isAwaitingReturn,
   );
@@ -80,6 +81,7 @@ export function useIconDrag({
         }
       },
       onClick: onP2Click,
+      longPressDrag: true,
     },
     !isAwaitingReturn,
   );
