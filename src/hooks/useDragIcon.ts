@@ -11,11 +11,15 @@ interface DragCallbacks {
 }
 
 const LONG_PRESS_MS = 160;
-const DRAG_START_DIST = 8;
+const DRAG_START_DIST_MOUSE = 4;
+const DRAG_START_DIST_TOUCH = 20;
 
 /**
  * ポインターイベントを使ったアイコンドラッグフック。
- * - longPressDrag=true のとき: 長押し（320ms）でドラッグ開始。移動距離では開始しない。短タップは onClick。
+ * - longPressDrag=true のとき:
+ *   - mouse: 小さい移動距離（4px）でドラッグ開始。長押しタイマーも併用。
+ *   - touch/pen: 大きい移動距離（20px）でドラッグ開始（誤タップ防止）。長押しタイマーも併用。
+ *   - いずれも短タップは onClick。
  * - longPressDrag=false (default): pointerdown 直後からドラッグ開始（従来通り）。
  */
 export function useDragIcon(
@@ -37,6 +41,7 @@ export function useDragIcon(
     let startClientX = 0;
     let startClientY = 0;
     let longPressTimer: number | null = null;
+    let pointerType = 'mouse';
 
     function getRelPos(clientX: number, clientY: number) {
       const container = cbRef.current.containerRef.current;
@@ -56,6 +61,7 @@ export function useDragIcon(
       startClientX = e.clientX;
       startClientY = e.clientY;
       dragging = false;
+      pointerType = e.pointerType;
 
       if (cbRef.current.longPressDrag) {
         longPressTimer = window.setTimeout(() => {
@@ -76,15 +82,19 @@ export function useDragIcon(
 
       if (!dragging) {
         if (cbRef.current.longPressDrag) {
-          // longPressDrag モード: 移動距離でドラッグ開始しない。
-          // 大きく動いたらタイマーだけキャンセルして tap 扱いにもしない（何もしない）
-          if (dist > DRAG_START_DIST && longPressTimer !== null) {
-            window.clearTimeout(longPressTimer);
-            longPressTimer = null;
+          const threshold = pointerType === 'mouse' ? DRAG_START_DIST_MOUSE : DRAG_START_DIST_TOUCH;
+          if (dist > threshold) {
+            if (longPressTimer !== null) {
+              window.clearTimeout(longPressTimer);
+              longPressTimer = null;
+            }
+            startDrag();
+            // fall through to position update
+          } else {
+            return;
           }
-          return;
         } else {
-          if (dist > DRAG_START_DIST) {
+          if (dist > DRAG_START_DIST_MOUSE) {
             startDrag();
           } else {
             return;
