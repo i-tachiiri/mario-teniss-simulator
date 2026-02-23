@@ -18,7 +18,7 @@ interface Props {
 }
 
 export function SvgLayer({ state, dispatch, draggingTo, containerRef, onShotMarkerClick }: Props) {
-  const isEditing = state.shotPhase.status === 'awaiting';
+  const isEditing = false;
 
   const selectedShot =
     state.selectedShotId != null ? (state.rallySteps.find(s => s.id === state.selectedShotId) ?? null) : null;
