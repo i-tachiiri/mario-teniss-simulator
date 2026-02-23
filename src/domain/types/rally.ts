@@ -27,13 +27,7 @@ export interface ShotStep {
 
 export type ShotPhase =
   | { status: 'idle' }
-  | {
-      status: 'awaiting';
-      bounceAt: Position;
-      hitFrom: PixelPos;
-      starPos?: PixelPos;
-      curveLevel: number;
-    };
+  | { status: 'editing' };
 
 export interface ShotConfig {
   color: string;
