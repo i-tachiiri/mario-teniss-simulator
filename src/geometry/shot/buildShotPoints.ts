@@ -43,6 +43,6 @@ export function buildShotPoints(params: {
     hitFromPx,
     bouncePx,
     returnPx: endPx,
-    markers: [bouncePx],
+    markers: [bouncePx, endPx],
   };
 }

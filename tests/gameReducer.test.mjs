@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { gameReducer, initialState } from '../.tmp-test/state/gameReducer.js';
+import { buildShotPoints } from '../.tmp-test/geometry/shot/buildShotPoints.js';
 
 const baseShot = {
   hitFrom: { x: 10, y: 10 },
@@ -39,4 +40,34 @@ test('DELETE_SELECTED_SCENE removes selected scene', () => {
   const next = gameReducer(state, { type: 'DELETE_SELECTED_SCENE' });
   assert.equal(next.rallySteps.length, 1);
   assert.equal(next.rallySteps[0].id, 1);
+});
+
+test('buildShotPoints keeps second marker for normal shots', () => {
+  const points = buildShotPoints({
+    hitFromPx: { x: 30, y: 250 },
+    bouncePx: { x: 120, y: 180 },
+    returnPx: { x: 170, y: 120 },
+    isDropLike: false,
+    isJumpLike: false,
+    containerSize: { width: 360, height: 640 },
+  });
+
+  assert.equal(points.markers.length, 2);
+  assert.deepEqual(points.markers[0], points.bouncePx);
+  assert.deepEqual(points.markers[1], points.returnPx);
+});
+
+test('buildShotPoints still keeps second marker for drop-like shots', () => {
+  const points = buildShotPoints({
+    hitFromPx: { x: 30, y: 250 },
+    bouncePx: { x: 120, y: 180 },
+    returnPx: { x: 170, y: 120 },
+    isDropLike: true,
+    isJumpLike: false,
+    containerSize: { width: 360, height: 640 },
+  });
+
+  assert.equal(points.markers.length, 2);
+  assert.deepEqual(points.markers[0], points.bouncePx);
+  assert.deepEqual(points.markers[1], points.returnPx);
 });
