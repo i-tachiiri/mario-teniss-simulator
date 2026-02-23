@@ -10,12 +10,12 @@ interface DragCallbacks {
   longPressDrag?: boolean;
 }
 
-const LONG_PRESS_MS = 320;
+const LONG_PRESS_MS = 160;
 const DRAG_START_DIST = 8;
 
 /**
  * ポインターイベントを使ったアイコンドラッグフック。
- * - longPressDrag=true のとき: 長押し or 一定距離移動でドラッグ開始。短タップは onClick。
+ * - longPressDrag=true のとき: 長押し（320ms）でドラッグ開始。移動距離では開始しない。短タップは onClick。
  * - longPressDrag=false (default): pointerdown 直後からドラッグ開始（従来通り）。
  */
 export function useDragIcon(
@@ -75,15 +75,20 @@ export function useDragIcon(
       const dist = Math.hypot(e.clientX - startClientX, e.clientY - startClientY);
 
       if (!dragging) {
-        if (dist > DRAG_START_DIST) {
-          // 長押し待ち中でも一定距離動いたらドラッグ開始
-          if (longPressTimer !== null) {
+        if (cbRef.current.longPressDrag) {
+          // longPressDrag モード: 移動距離でドラッグ開始しない。
+          // 大きく動いたらタイマーだけキャンセルして tap 扱いにもしない（何もしない）
+          if (dist > DRAG_START_DIST && longPressTimer !== null) {
             window.clearTimeout(longPressTimer);
             longPressTimer = null;
           }
-          startDrag();
-        } else {
           return;
+        } else {
+          if (dist > DRAG_START_DIST) {
+            startDrag();
+          } else {
+            return;
+          }
         }
       }
 
@@ -106,6 +111,13 @@ export function useDragIcon(
       if (!dragging) {
         // 短タップ: onClick を呼ぶ
         cbRef.current.onClick?.();
+        // デスクトップで pointerup 後に合成される click がバックドロップに届かないよう破棄する
+        const eat = (ev: MouseEvent) => {
+          ev.stopPropagation();
+          document.removeEventListener('click', eat, true);
+        };
+        document.addEventListener('click', eat, true);
+        requestAnimationFrame(() => document.removeEventListener('click', eat, true));
         return;
       }
 

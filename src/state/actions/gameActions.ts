@@ -17,5 +17,4 @@ export type GameAction =
   | { type: 'SET_SUBTITLE_DRAFT'; subtitle: string }
   | { type: 'UNDO_LAST' }
   | { type: 'RESET_ALL' }
-  | { type: 'SET_STAR_POS'; id: number; pos: PixelPos | null }
-  | { type: 'SET_PENDING_STAR'; pos: PixelPos | null };
+  | { type: 'SET_STAR_POS'; id: number; pos: PixelPos | null };

@@ -14,9 +14,9 @@ export interface GameStateHook {
 export function useGameState(): GameStateHook {
   const [state, dispatch] = useReducer(gameReducer, initialState);
 
-  const isAwaitingReturn = state.shotPhase.status === 'awaiting';
+  const isAwaitingReturn = state.shotPhase.status === 'editing';
 
-  const canReposition = !isAwaitingReturn && state.rallySteps.length > 0 && state.selectedShotId === null;
+  const canReposition = false;
 
   return { state, dispatch, isAwaitingReturn, canReposition };
 }

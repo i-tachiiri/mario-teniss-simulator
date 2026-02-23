@@ -26,6 +26,7 @@ interface UseIconDragResult {
 /**
  * App.tsx の4つの useDragIcon 呼び出しをまとめた専用フック。
  * どのドラッグが有効かの条件式と、ShotPreviewPath 用の位置状態をここに閉じる。
+ * longPressDrag=true: 長押し（320ms）でドラッグ開始、短タップでキャラ選択。
  */
 export function useIconDrag({
   containerRef,
@@ -40,6 +41,7 @@ export function useIconDrag({
   onP2Click,
 }: UseIconDragOptions): UseIconDragResult {
   const [receiverDragPos, setReceiverDragPos] = useState<{ x: number; y: number } | null>(null);
+
   // P1 フリードラッグ / リポジション（バウンド地点未選択時）
   useDragIcon(
     p1Ref,
@@ -88,6 +90,7 @@ export function useIconDrag({
 
   // バウンド選択後: レシーバードラッグ（activeSide=top → P2 が受ける）
   const receiverRef = activeSide === 'top' ? p2Ref : p1Ref;
+  const receiverClick = activeSide === 'top' ? onP2Click : onP1Click;
   useDragIcon(
     receiverRef,
     {
@@ -97,6 +100,8 @@ export function useIconDrag({
         setReceiverDragPos(null);
         dispatch({ type: 'FINALIZE_RETURN', iconX: x, iconY: y });
       },
+      onClick: receiverClick,
+      longPressDrag: true,
     },
     isAwaitingReturn,
   );
@@ -104,11 +109,14 @@ export function useIconDrag({
   // バウンド選択後: オフザボール側ドラッグ（ヒッター側も動かせる）
   const offBallRef = activeSide === 'top' ? p1Ref : p2Ref;
   const offBallPlayer: 'p1' | 'p2' = activeSide === 'top' ? 'p1' : 'p2';
+  const offBallClick = activeSide === 'top' ? onP1Click : onP2Click;
   useDragIcon(
     offBallRef,
     {
       containerRef,
       onDrop: (x, y) => dispatch({ type: 'SET_PLAYER_POS', player: offBallPlayer, x, y }),
+      onClick: offBallClick,
+      longPressDrag: true,
     },
     isAwaitingReturn,
   );

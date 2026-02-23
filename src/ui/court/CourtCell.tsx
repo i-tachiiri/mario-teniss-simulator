@@ -45,7 +45,7 @@ export function CourtCell({
     .join(' ');
 
   return (
-    <div className={classes} onClick={handleClick}>
+    <div className={classes} onClick={handleClick} data-row={r} data-col={c}>
       <span>{label}</span>
     </div>
   );

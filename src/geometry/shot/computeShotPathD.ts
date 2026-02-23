@@ -1,6 +1,27 @@
 import type { PixelPos, ShotStep } from '../../types';
+import { normalize } from '../math/vector';
 import { pointsToPathD } from '../path/pointsToPathD';
 import { buildShotPoints } from './buildShotPoints';
+
+/**
+ * segment 1 のバウンド到着タンジェント方向を計算する。
+ * quadratic Bezier の終端タンジェント = bounce - ctrl1
+ */
+function computeArrivalDir(
+  hitFrom: PixelPos,
+  bounce: PixelPos,
+  bend: number,
+  bendDir: 1 | -1,
+): PixelPos | undefined {
+  if (Math.abs(bend) < 0.01) return undefined;
+  const n = normalize(bounce.x - hitFrom.x, bounce.y - hitFrom.y);
+  if (!n) return undefined;
+  const len = Math.hypot(bounce.x - hitFrom.x, bounce.y - hitFrom.y);
+  const scale = bend * Math.min(1.5, Math.max(0.35, len / 200));
+  const ctrl1x = (hitFrom.x + bounce.x) / 2 + (-n.y) * scale * bendDir;
+  const ctrl1y = (hitFrom.y + bounce.y) / 2 + n.x * scale * bendDir;
+  return { x: bounce.x - ctrl1x, y: bounce.y - ctrl1y };
+}
 
 export interface ShotVisualPath {
   d: string;
@@ -32,6 +53,8 @@ export function computeShotPathD(params: {
     bendDir2 = 1,
   } = params;
 
+  const arrivalDir = computeArrivalDir(hitFrom, bounce1, bend1, bendDir1);
+
   const points = buildShotPoints({
     hitFromPx: hitFrom,
     bouncePx: bounce1,
@@ -39,6 +62,7 @@ export function computeShotPathD(params: {
     isDropLike,
     isJumpLike,
     containerSize,
+    arrivalDir,
   });
 
   return {
@@ -82,7 +106,7 @@ export function computeSceneVisual(params: {
   containerSize?: { width: number; height: number };
 }): ShotVisualPath {
   const { hitFrom, bounce1, returnAt, type, bendLevel, baseCurve, containerSize } = params;
-  const signedCurve = baseCurve + bendLevel * 16;
+  const signedCurve = baseCurve + bendLevel * 24;
   const curve = Math.abs(signedCurve);
   const curveDir: 1 | -1 = signedCurve >= 0 ? 1 : -1;
 
@@ -94,8 +118,8 @@ export function computeSceneVisual(params: {
     isJumpLike: type === 'jump',
     containerSize,
     bend1: curve,
-    bend2: curve,
+    bend2: 0,
     bendDir1: curveDir,
-    bendDir2: curveDir,
+    bendDir2: 1,
   });
 }

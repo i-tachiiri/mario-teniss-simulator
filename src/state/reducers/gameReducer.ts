@@ -1,6 +1,5 @@
 import type { PixelPos, Position, ShotPhase, ShotStep, ShotType } from '../../types';
 import type { GameAction } from '../actions/gameActions';
-import { computeBallPathD } from '../../geometry/shot/path';
 import { computeReturnAndSide } from '../../geometry/shot/returnAndSide';
 import { getHitFrom } from '../../geometry/shot/hitFrom';
 import { positionToPixelPos } from '../../geometry/coord';
@@ -39,75 +38,37 @@ export const initialState: GameStateData = {
   subtitleDraft: '',
 };
 
-const clampCurve = (v: number) => Math.max(-5, Math.min(5, v));
+const clampCurve = (v: number) => Math.max(-10, Math.min(10, v));
 const newId = () => Date.now() + Math.floor(Math.random() * 1000);
 
-function autoFinalizePendingShot(state: GameStateData): GameStateData {
-  if (state.shotPhase.status !== 'awaiting') return state;
-  const receiverIconPos = state.activeSide === 'top' ? state.p2IconPos : state.p1IconPos;
-  if (!receiverIconPos) {
-    return { ...state, shotPhase: { status: 'idle' }, selectedShotId: null };
-  }
-  const { bounceAt, hitFrom, starPos: pendingStarPos, curveLevel } = state.shotPhase;
-  const { returnAt, shotSide } = computeReturnAndSide(
-    hitFrom,
-    positionToPixelPos(bounceAt),
-    receiverIconPos.x,
-    receiverIconPos.y,
-    state.activeSide,
-  );
-  const shot: ShotStep = {
-    hitFrom,
-    bounceAt,
-    returnAt,
-    playerAt: { x: receiverIconPos.x, y: receiverIconPos.y },
-    shotSide,
-    type: state.selectedShotType,
-    id: newId(),
-    ballPathD: computeBallPathD(hitFrom, { x: bounceAt.x, y: bounceAt.y }, returnAt, 0),
-    starPos: pendingStarPos,
-    curveLevel,
-    subtitle: state.subtitleDraft,
-  };
-  const bounceInBottom = bounceAt.r >= 5;
-  return {
-    ...state,
-    rallySteps: [...state.rallySteps, shot],
-    shotPhase: { status: 'idle' },
-    selectedShotId: shot.id,
-    p1IconPos: bounceInBottom ? { x: receiverIconPos.x, y: receiverIconPos.y } : state.p1IconPos,
-    p2IconPos: !bounceInBottom ? { x: receiverIconPos.x, y: receiverIconPos.y } : state.p2IconPos,
-  };
+/** 現在編集中のシーンIDを返す（selectedShotId → 最終シーン → null） */
+function getEditId(state: GameStateData): number | null {
+  return state.selectedShotId ?? (state.rallySteps.length > 0 ? state.rallySteps[state.rallySteps.length - 1].id : null);
 }
 
 export function gameReducer(state: GameStateData, action: GameAction): GameStateData {
   switch (action.type) {
     case 'SET_SHOT_TYPE': {
-      if (state.selectedShotId !== null) {
-        const updatedSteps = state.rallySteps.map(s =>
-          s.id === state.selectedShotId ? { ...s, type: action.shotType } : s,
-        );
-        return { ...state, selectedShotType: action.shotType, rallySteps: updatedSteps };
+      const editId = getEditId(state);
+      if (editId !== null) {
+        return {
+          ...state,
+          selectedShotType: action.shotType,
+          rallySteps: state.rallySteps.map(s => s.id === editId ? { ...s, type: action.shotType } : s),
+        };
       }
       return { ...state, selectedShotType: action.shotType };
     }
 
     case 'SET_SHOT_CURVE': {
-      if (state.shotPhase.status === 'awaiting') {
-        return {
-          ...state,
-          shotPhase: { ...state.shotPhase, curveLevel: clampCurve(state.shotPhase.curveLevel + action.delta) },
-        };
-      }
-      if (state.selectedShotId !== null) {
-        return {
-          ...state,
-          rallySteps: state.rallySteps.map(s =>
-            s.id === state.selectedShotId ? { ...s, curveLevel: clampCurve(s.curveLevel + action.delta) } : s,
-          ),
-        };
-      }
-      return state;
+      const editId = getEditId(state);
+      if (!editId) return state;
+      return {
+        ...state,
+        rallySteps: state.rallySteps.map(s =>
+          s.id === editId ? { ...s, curveLevel: clampCurve(s.curveLevel + action.delta) } : s
+        ),
+      };
     }
 
     case 'SET_PLAYER_POS': {
@@ -132,47 +93,71 @@ export function gameReducer(state: GameStateData, action: GameAction): GameState
       return { ...state, p1CharName: action.p1, p2CharName: action.p2 };
 
     case 'CELL_CLICKED': {
-      const baseState = autoFinalizePendingShot(state);
       const activeSide: 'top' | 'bottom' = action.r < 5 ? 'top' : 'bottom';
       const bounceAt: Position = { r: action.r, c: action.c, x: action.x, y: action.y };
-      const hitFrom = getHitFrom(baseState.rallySteps, activeSide, baseState.p1Pos, baseState.p2Pos);
+      const editId = getEditId(state);
+
+      if (editId !== null) {
+        // 既存シーンのバウンド地点を更新（確定なしで即反映）
+        const priorSteps = state.rallySteps.filter(s => s.id !== editId);
+        const hitFrom = getHitFrom(priorSteps, activeSide, state.p1Pos, state.p2Pos);
+        return {
+          ...state,
+          activeSide,
+          shotPhase: { status: 'editing' },
+          rallySteps: state.rallySteps.map(s =>
+            s.id === editId ? { ...s, bounceAt, hitFrom } : s
+          ),
+        };
+      }
+
+      // 初回: 新しいシーンを即 rallySteps に追加
+      const hitFrom = getHitFrom([], activeSide, state.p1Pos, state.p2Pos);
+      const receiverIconPos = activeSide === 'top' ? state.p2IconPos : state.p1IconPos;
+      const defaultReturnAt = receiverIconPos ?? { x: bounceAt.x, y: bounceAt.y };
+      const id = newId();
+      const shot: ShotStep = {
+        hitFrom,
+        bounceAt,
+        returnAt: defaultReturnAt,
+        playerAt: defaultReturnAt,
+        shotSide: 'forehand',
+        type: state.selectedShotType,
+        id,
+        curveLevel: 0,
+        subtitle: state.subtitleDraft,
+      };
       return {
-        ...baseState,
+        ...state,
         activeSide,
-        shotPhase: { status: 'awaiting', bounceAt, hitFrom, curveLevel: 0 },
-        selectedShotId: null,
+        shotPhase: { status: 'editing' },
+        selectedShotId: id,
+        rallySteps: [shot],
       };
     }
 
     case 'FINALIZE_RETURN': {
-      if (state.shotPhase.status !== 'awaiting') return state;
-      const { bounceAt, hitFrom, starPos: pendingStarPos, curveLevel } = state.shotPhase;
+      // レシーバーがドラッグ終了 → シーンの returnAt を更新（確定概念なし）
+      const editId = getEditId(state);
+      if (!editId) return state;
+      const shot = state.rallySteps.find(s => s.id === editId);
+      if (!shot) return state;
+
       const { returnAt, shotSide } = computeReturnAndSide(
-        hitFrom,
-        positionToPixelPos(bounceAt),
+        shot.hitFrom,
+        positionToPixelPos(shot.bounceAt),
         action.iconX,
         action.iconY,
         state.activeSide,
       );
-      const shot: ShotStep = {
-        hitFrom,
-        bounceAt,
-        returnAt,
-        playerAt: { x: action.iconX, y: action.iconY },
-        shotSide,
-        type: state.selectedShotType,
-        id: newId(),
-        ballPathD: computeBallPathD(hitFrom, { x: bounceAt.x, y: bounceAt.y }, returnAt, 0),
-        starPos: pendingStarPos,
-        curveLevel,
-        subtitle: state.subtitleDraft,
-      };
-      const bounceInBottom = bounceAt.r >= 5;
+      const bounceInBottom = shot.bounceAt.r >= 5;
       return {
         ...state,
-        rallySteps: [...state.rallySteps, shot],
-        shotPhase: { status: 'idle' },
-        selectedShotId: shot.id,
+        rallySteps: state.rallySteps.map(s =>
+          s.id === editId
+            ? { ...s, returnAt, playerAt: { x: action.iconX, y: action.iconY }, shotSide }
+            : s
+        ),
         p1IconPos: bounceInBottom ? { x: action.iconX, y: action.iconY } : state.p1IconPos,
         p2IconPos: !bounceInBottom ? { x: action.iconX, y: action.iconY } : state.p2IconPos,
       };
@@ -182,7 +167,15 @@ export function gameReducer(state: GameStateData, action: GameAction): GameState
       if (action.id !== null) {
         const shot = state.rallySteps.find(s => s.id === action.id);
         if (shot) {
-          return { ...state, selectedShotId: action.id, selectedShotType: shot.type, subtitleDraft: shot.subtitle };
+          const activeSide: 'top' | 'bottom' = shot.bounceAt.r < 5 ? 'top' : 'bottom';
+          return {
+            ...state,
+            selectedShotId: action.id,
+            selectedShotType: shot.type,
+            subtitleDraft: shot.subtitle,
+            activeSide,
+            shotPhase: { status: 'editing' },
+          };
         }
       }
       return { ...state, selectedShotId: action.id };
@@ -217,6 +210,7 @@ export function gameReducer(state: GameStateData, action: GameAction): GameState
       return {
         ...state,
         rallySteps: [...state.rallySteps, clone],
+        shotPhase: { status: 'editing' },
         selectedShotId: clone.id,
         selectedShotType: clone.type,
         subtitleDraft: clone.subtitle,
@@ -231,6 +225,7 @@ export function gameReducer(state: GameStateData, action: GameAction): GameState
       return {
         ...state,
         rallySteps: next,
+        shotPhase: next.length === 0 ? { status: 'idle' } : { status: 'editing' },
         selectedShotId: last ? last.id : null,
         selectedShotType: last ? last.type : state.selectedShotType,
         subtitleDraft: last ? last.subtitle : '',
@@ -257,24 +252,18 @@ export function gameReducer(state: GameStateData, action: GameAction): GameState
       return { ...state, subtitleDraft: action.subtitle };
 
     case 'UNDO_LAST': {
-      if (state.shotPhase.status === 'awaiting') {
-        return { ...state, shotPhase: { status: 'idle' }, selectedShotId: null };
-      }
       if (state.rallySteps.length === 0) return state;
       const removed = state.rallySteps[state.rallySteps.length - 1];
+      const next = state.rallySteps.slice(0, -1);
       const bounceInBottom = removed.bounceAt.r >= 5;
       return {
         ...state,
-        rallySteps: state.rallySteps.slice(0, -1),
+        rallySteps: next,
+        shotPhase: next.length === 0 ? { status: 'idle' } : { status: 'editing' },
         selectedShotId: null,
         p1IconPos: bounceInBottom ? { x: removed.playerAt.x, y: removed.playerAt.y } : state.p1IconPos,
         p2IconPos: !bounceInBottom ? { x: removed.playerAt.x, y: removed.playerAt.y } : state.p2IconPos,
       };
-    }
-
-    case 'SET_PENDING_STAR': {
-      if (state.shotPhase.status !== 'awaiting') return state;
-      return { ...state, shotPhase: { ...state.shotPhase, starPos: action.pos ?? undefined } };
     }
 
     case 'SET_STAR_POS':
