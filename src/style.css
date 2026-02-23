@@ -124,6 +124,8 @@
   cursor: grab !important;
   pointer-events: auto !important;
   touch-action: none;
+  -webkit-touch-callout: none;
+  user-select: none;
 }
 
 /* 球種ボタンのアクティブ状態 */

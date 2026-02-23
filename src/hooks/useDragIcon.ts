@@ -129,13 +129,19 @@ export function useDragIcon(
       cbRef.current.onDrop(pos.x, pos.y);
     }
 
+    function onContextMenu(e: Event) {
+      e.preventDefault();
+    }
+
     icon.addEventListener('pointerdown', onPointerDown);
+    icon.addEventListener('contextmenu', onContextMenu);
 
     return () => {
       if (longPressTimer !== null) window.clearTimeout(longPressTimer);
       icon.style.pointerEvents = 'none';
       icon.classList.remove('char-draggable');
       icon.removeEventListener('pointerdown', onPointerDown);
+      icon.removeEventListener('contextmenu', onContextMenu);
       document.removeEventListener('pointermove', onPointerMove);
       document.removeEventListener('pointerup', onPointerUp);
     };
