@@ -29,9 +29,12 @@ export function StarMarker({ x, y, containerRef, onDrop }: Props) {
     const icon = iconRef.current;
     if (!icon) return;
 
+    const LONG_PRESS_MS = 160;
+    const DRAG_CANCEL_DIST = 8;
     let dragging = false;
     let startClientX = 0;
     let startClientY = 0;
+    let longPressTimer: number | null = null;
 
     function getRelPos(clientX: number, clientY: number) {
       const container = containerRef.current;
@@ -42,43 +45,59 @@ export function StarMarker({ x, y, containerRef, onDrop }: Props) {
 
     function onPointerDown(e: PointerEvent) {
       e.preventDefault();
-      dragging = true;
+      dragging = false;
       startClientX = e.clientX;
       startClientY = e.clientY;
-      icon!.style.cursor = 'grabbing';
+      longPressTimer = window.setTimeout(() => {
+        longPressTimer = null;
+        dragging = true;
+        icon!.style.cursor = 'grabbing';
+      }, LONG_PRESS_MS);
       document.addEventListener('pointermove', onPointerMove, { passive: false });
       document.addEventListener('pointerup', onPointerUp);
     }
 
     function onPointerMove(e: PointerEvent) {
-      if (!dragging) return;
       e.preventDefault();
+      if (!dragging) {
+        // 大きく動いたらタイマーをキャンセル（ドラッグは開始しない）
+        const dist = Math.hypot(e.clientX - startClientX, e.clientY - startClientY);
+        if (dist > DRAG_CANCEL_DIST && longPressTimer !== null) {
+          window.clearTimeout(longPressTimer);
+          longPressTimer = null;
+        }
+        return;
+      }
       const pos = getRelPos(e.clientX, e.clientY);
       if (!pos) return;
       setDisplayPos(pos);
     }
 
     function onPointerUp(e: PointerEvent) {
-      if (!dragging) return;
-      dragging = false;
-      icon!.style.cursor = 'grab';
+      if (longPressTimer !== null) {
+        window.clearTimeout(longPressTimer);
+        longPressTimer = null;
+      }
       document.removeEventListener('pointermove', onPointerMove);
       document.removeEventListener('pointerup', onPointerUp);
+
+      if (!dragging) return; // 短タップ: 何もしない
+
+      dragging = false;
+      icon!.style.cursor = 'grab';
       const pos = getRelPos(e.clientX, e.clientY);
-      const dist = Math.hypot(e.clientX - startClientX, e.clientY - startClientY);
-      if (dist >= 8) {
-        // コート内でリリースされた場合のみ確定、それ以外は元位置へ戻す
-        if (pos && pos.x >= 0 && pos.y >= 0 && pos.x <= pos.w && pos.y <= pos.h) {
-          propsRef.current.onDrop(pos.x, pos.y);
-        } else {
-          setDisplayPos({ x: propsRef.current.x, y: propsRef.current.y });
-        }
+      // コート内でリリースされた場合のみ確定、それ以外は元位置へ戻す
+      if (pos && pos.x >= 0 && pos.y >= 0 && pos.x <= pos.w && pos.y <= pos.h) {
+        propsRef.current.onDrop(pos.x, pos.y);
+      } else {
+        setDisplayPos({ x: propsRef.current.x, y: propsRef.current.y });
       }
     }
 
     icon.addEventListener('pointerdown', onPointerDown);
 
     return () => {
+      if (longPressTimer !== null) window.clearTimeout(longPressTimer);
       icon.removeEventListener('pointerdown', onPointerDown);
       document.removeEventListener('pointermove', onPointerMove);
       document.removeEventListener('pointerup', onPointerUp);
