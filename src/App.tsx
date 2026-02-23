@@ -1,13 +1,10 @@
 import { useRef, useState, useEffect } from 'react';
 import { useGameState } from './state/useGameState';
 import { useIconDrag } from './hooks/useIconDrag';
-import { useRallyAnimation } from './hooks/useRallyAnimation';
 import { Court } from './components/Court/Court';
 import { SvgLayer } from './components/Overlay/SvgLayer';
 import { CharIcon } from './components/CharIcon';
-import { Ball } from './components/Ball';
 import { EditPanel } from './components/Panels/EditPanel';
-import { PlayPanel } from './components/Panels/PlayPanel';
 import { ShotTypeSheet } from './components/Sheets/ShotTypeSheet';
 import { CharPickerSheet } from './components/Sheets/CharPickerSheet';
 import type { ShotType } from './types';
@@ -15,40 +12,17 @@ import type { ShotType } from './types';
 export function App() {
   const { state, dispatch, isAwaitingReturn, canReposition } = useGameState();
 
-  // Refs
   const containerRef = useRef<HTMLDivElement | null>(null);
   const p1Ref = useRef<HTMLDivElement | null>(null);
   const p2Ref = useRef<HTMLDivElement | null>(null);
-  const ballRef = useRef<HTMLDivElement | null>(null);
 
-  // アプリモード
-  const [appMode, setAppMode] = useState<'edit' | 'play'>('edit');
-
-  // ショット種別シートの dismiss フラグ（バウンド地点変わる度にリセット）
   const [shotSheetDismissed, setShotSheetDismissed] = useState(false);
-
-  // キャラクター選択シート
   const [charSheetOpen, setCharSheetOpen] = useState(false);
   const [selectingPlayer, setSelectingPlayer] = useState<'p1' | 'p2'>('p1');
 
-  // ラリーアニメーション
-  const { isPlaying, playingShot, playRally } = useRallyAnimation({
-    state,
-    p1Ref,
-    p2Ref,
-    ballRef,
-    containerRef,
-  });
-
-  // shotPhase / selectedShotId が変わるたびに dismiss フラグをリセット
-  // （オートファイナライズで新しいバウンドに切り替わった場合もシートを再表示）
   useEffect(() => {
     setShotSheetDismissed(false);
   }, [state.shotPhase, state.selectedShotId]);
-
-  // =========================
-  // ドラッグフック
-  // =========================
 
   const lastShot = state.rallySteps[state.rallySteps.length - 1];
 
@@ -65,21 +39,9 @@ export function App() {
     onP2Click: () => { setSelectingPlayer('p2'); setCharSheetOpen(true); },
   });
 
-  // =========================
-  // ショット種別シートの表示
-  // =========================
   const shotSheetVisible =
     !shotSheetDismissed &&
     (state.shotPhase.status === 'awaiting' || state.selectedShotId !== null);
-
-  // =========================
-  // ハンドラー
-  // =========================
-
-  function handleEnterPlay() {
-    setAppMode('play');
-    void playRally();
-  }
 
   function handleShotTypeSelect(type: ShotType) {
     setShotSheetDismissed(true);
@@ -109,7 +71,7 @@ export function App() {
     <div className="bg-slate-700 min-h-screen font-sans">
       <div className="max-w-md mx-auto flex flex-col gap-3 px-2 py-3 pb-8">
         <h1 className="text-lg font-black text-center text-white tracking-tighter">
-          MARIO TENNIS <span className="text-blue-400">RALLY SIM</span>
+          <span className="text-blue-400">MT-FEVER</span>
         </h1>
 
         <Court
@@ -118,7 +80,7 @@ export function App() {
           isAwaitingReturn={isAwaitingReturn}
           containerRef={containerRef}
         >
-          <SvgLayer state={state} dispatch={dispatch} draggingTo={receiverDragPos} isPlaying={isPlaying} playingShot={playingShot} containerRef={containerRef} />
+          <SvgLayer state={state} dispatch={dispatch} draggingTo={receiverDragPos} containerRef={containerRef} />
           <CharIcon
             ref={p1Ref}
             charName={state.p1CharName}
@@ -131,26 +93,21 @@ export function App() {
             alt="P2"
             pos={state.p2IconPos}
           />
-          <Ball ref={ballRef} />
         </Court>
 
-        {appMode === 'edit' ? (
-          <EditPanel
-            state={state}
-            dispatch={dispatch}
-            isAwaitingReturn={isAwaitingReturn}
-            onEnterPlay={handleEnterPlay}
-            onShotSelect={() => setShotSheetDismissed(false)}
-            onP1Click={() => { setSelectingPlayer('p1'); setCharSheetOpen(true); }}
-            onP2Click={() => { setSelectingPlayer('p2'); setCharSheetOpen(true); }}
-          />
-        ) : (
-          <PlayPanel
-            isPlaying={isPlaying}
-            onPlay={() => void playRally()}
-            onExitPlay={() => setAppMode('edit')}
-          />
-        )}
+        <EditPanel
+          state={state}
+          dispatch={dispatch}
+          onShotSelect={() => setShotSheetDismissed(false)}
+          onShotButtonClick={() => {
+            if (state.selectedShotId === null && state.rallySteps.length > 0) {
+              dispatch({ type: 'SELECT_SHOT', id: state.rallySteps[state.rallySteps.length - 1].id });
+            }
+            setShotSheetDismissed(false);
+          }}
+          onP1Click={() => { setSelectingPlayer('p1'); setCharSheetOpen(true); }}
+          onP2Click={() => { setSelectingPlayer('p2'); setCharSheetOpen(true); }}
+        />
       </div>
 
       <ShotTypeSheet

@@ -50,6 +50,11 @@ export function Court({ state, dispatch, isAwaitingReturn, containerRef, childre
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+
+  const subtitle = state.selectedShotId !== null
+    ? state.rallySteps.find(s => s.id === state.selectedShotId)?.subtitle ?? state.subtitleDraft
+    : state.subtitleDraft;
+
   // ドラッグ中のみ非アクティブ側をdim
   const activeSideForDim = isAwaitingReturn ? state.activeSide : null;
 
@@ -68,6 +73,11 @@ export function Court({ state, dispatch, isAwaitingReturn, containerRef, childre
 
   return (
     <div ref={containerRef} className="relative flex flex-col items-center court-container-bg">
+      {subtitle && (
+        <div className="absolute top-2 left-1/2 -translate-x-1/2 z-40 max-w-[90%] px-3 py-1 rounded bg-black/70 text-white text-xs font-black tracking-wide text-center">
+          {subtitle}
+        </div>
+      )}
       <div className={topLabelClass}>↑ 相手 (P2)</div>
       <CourtGrid
         rowStart={0}

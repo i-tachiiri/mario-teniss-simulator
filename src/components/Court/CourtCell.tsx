@@ -1,6 +1,5 @@
 import type { RefObject } from 'react';
 import type { GameAction } from '../../state/gameActions';
-import { getCellPosition } from '../../geometry/coordUtils';
 
 interface Props {
   r: number;
@@ -26,8 +25,14 @@ export function CourtCell({
   function handleClick(e: React.MouseEvent<HTMLDivElement>) {
     const container = containerRef.current;
     if (!container) return;
-    const pos = getCellPosition(container, e.currentTarget, r, c);
-    dispatch({ type: 'CELL_CLICKED', r: pos.r, c: pos.c, x: pos.x, y: pos.y });
+    const containerRect = container.getBoundingClientRect();
+    dispatch({
+      type: 'CELL_CLICKED',
+      r,
+      c,
+      x: e.clientX - containerRect.left,
+      y: e.clientY - containerRect.top,
+    });
   }
 
   const classes = [
