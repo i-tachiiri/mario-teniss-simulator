@@ -118,6 +118,7 @@ export function StarMarker({ x, y, containerRef, onDrop }: Props) {
         cursor: 'grab',
         pointerEvents: 'auto',
         userSelect: 'none',
+        touchAction: 'none',
       }}
     >
       <svg width={HALF * 2} height={HALF * 2} viewBox="0 0 32 32" overflow="visible">
