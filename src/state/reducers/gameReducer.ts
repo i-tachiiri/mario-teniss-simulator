@@ -1,9 +1,10 @@
 import type { PixelPos, Position, ShotPhase, ShotStep, ShotType } from '../../types';
 import type { GameAction } from '../actions/gameActions';
-import { computeBallPathD } from '../../geometry/shot/path';
+import { computeSceneVisual } from '../../geometry/shot/path';
 import { computeReturnAndSide } from '../../geometry/shot/returnAndSide';
 import { getHitFrom } from '../../geometry/shot/hitFrom';
 import { positionToPixelPos } from '../../geometry/coord';
+import { SHOT_CONFIGS } from '../../config';
 
 export interface GameStateData {
   p1Pos: Position | null;
@@ -42,6 +43,18 @@ export const initialState: GameStateData = {
 const clampCurve = (v: number) => Math.max(-5, Math.min(5, v));
 const newId = () => Date.now() + Math.floor(Math.random() * 1000);
 
+function computeStoredBallPathD(shot: Pick<ShotStep, 'hitFrom' | 'bounceAt' | 'returnAt' | 'type' | 'curveLevel'>) {
+  const config = SHOT_CONFIGS[shot.type];
+  return computeSceneVisual({
+    hitFrom: shot.hitFrom,
+    bounce1: { x: shot.bounceAt.x, y: shot.bounceAt.y },
+    returnAt: shot.returnAt,
+    type: shot.type,
+    bendLevel: shot.curveLevel,
+    baseCurve: config.curveAmount,
+  }).d;
+}
+
 function autoFinalizePendingShot(state: GameStateData): GameStateData {
   if (state.shotPhase.status !== 'awaiting') return state;
   const receiverIconPos = state.activeSide === 'top' ? state.p2IconPos : state.p1IconPos;
@@ -64,7 +77,13 @@ function autoFinalizePendingShot(state: GameStateData): GameStateData {
     shotSide,
     type: state.selectedShotType,
     id: newId(),
-    ballPathD: computeBallPathD(hitFrom, { x: bounceAt.x, y: bounceAt.y }, returnAt, 0),
+    ballPathD: computeStoredBallPathD({
+      hitFrom,
+      bounceAt,
+      returnAt,
+      type: state.selectedShotType,
+      curveLevel,
+    }),
     starPos: pendingStarPos,
     curveLevel,
     subtitle: state.subtitleDraft,
@@ -85,7 +104,9 @@ export function gameReducer(state: GameStateData, action: GameAction): GameState
     case 'SET_SHOT_TYPE': {
       if (state.selectedShotId !== null) {
         const updatedSteps = state.rallySteps.map(s =>
-          s.id === state.selectedShotId ? { ...s, type: action.shotType } : s,
+          s.id === state.selectedShotId
+            ? { ...s, type: action.shotType, ballPathD: computeStoredBallPathD({ ...s, type: action.shotType }) }
+            : s,
         );
         return { ...state, selectedShotType: action.shotType, rallySteps: updatedSteps };
       }
@@ -102,9 +123,11 @@ export function gameReducer(state: GameStateData, action: GameAction): GameState
       if (state.selectedShotId !== null) {
         return {
           ...state,
-          rallySteps: state.rallySteps.map(s =>
-            s.id === state.selectedShotId ? { ...s, curveLevel: clampCurve(s.curveLevel + action.delta) } : s,
-          ),
+          rallySteps: state.rallySteps.map(s => {
+            if (s.id !== state.selectedShotId) return s;
+            const curveLevel = clampCurve(s.curveLevel + action.delta);
+            return { ...s, curveLevel, ballPathD: computeStoredBallPathD({ ...s, curveLevel }) };
+          }),
         };
       }
       return state;
@@ -162,7 +185,13 @@ export function gameReducer(state: GameStateData, action: GameAction): GameState
         shotSide,
         type: state.selectedShotType,
         id: newId(),
-        ballPathD: computeBallPathD(hitFrom, { x: bounceAt.x, y: bounceAt.y }, returnAt, 0),
+        ballPathD: computeStoredBallPathD({
+      hitFrom,
+      bounceAt,
+      returnAt,
+      type: state.selectedShotType,
+      curveLevel,
+    }),
         starPos: pendingStarPos,
         curveLevel,
         subtitle: state.subtitleDraft,
@@ -203,6 +232,7 @@ export function gameReducer(state: GameStateData, action: GameAction): GameState
         returnAt,
         playerAt: { x: action.iconX, y: action.iconY },
         shotSide,
+        ballPathD: computeStoredBallPathD({ ...lastShot, returnAt }),
       };
       return { ...state, rallySteps: [...state.rallySteps.slice(0, -1), updatedShot] };
     }
