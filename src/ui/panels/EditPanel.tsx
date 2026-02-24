@@ -13,15 +13,14 @@ interface Props {
   onSetDownloading?: (value: boolean) => void;
 }
 
-function IconTrash() {
-  return (
-    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="3,6 5,6 21,6" />
-      <path d="M19 6l-1 14H6L5 6" />
-      <path d="M10 11v6m4-6v6" />
-      <path d="M9 6V4h6v2" />
-    </svg>
-  );
+
+function loadImage(url: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = url;
+  });
 }
 
 export function EditPanel({ state, dispatch, onShotButtonClick, onCharClick, containerRef, onSetDownloading }: Props) {
@@ -34,6 +33,7 @@ export function EditPanel({ state, dispatch, onShotButtonClick, onCharClick, con
     const prevPlaceholder = textarea?.getAttribute('placeholder') ?? '';
     textarea?.setAttribute('placeholder', '');
     flushSync(() => onSetDownloading?.(true));
+    await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
     try {
       const dataUrl = await toPng(el, { pixelRatio: 2 });
       const link = document.createElement('a');
@@ -43,6 +43,68 @@ export function EditPanel({ state, dispatch, onShotButtonClick, onCharClick, con
     } finally {
       el.style.boxShadow = prev;
       textarea?.setAttribute('placeholder', prevPlaceholder);
+      onSetDownloading?.(false);
+    }
+  }
+
+  async function handleDownloadCombined() {
+    if (!containerRef.current || state.scenes.length < 2) return;
+
+    const el = containerRef.current;
+    const prev = el.style.boxShadow;
+    el.style.boxShadow = 'none';
+    const textarea = el.querySelector('textarea');
+    const prevPlaceholder = textarea?.getAttribute('placeholder') ?? '';
+    textarea?.setAttribute('placeholder', '');
+
+    const originalSceneId = state.selectedSceneId;
+    const dataUrls: string[] = [];
+
+    // アイコンのCSSトランジションをOFFにしてシーン切り替えを瞬時に反映
+    const charIcons = Array.from(el.querySelectorAll<HTMLElement>('.char-icon'));
+    charIcons.forEach(icon => { icon.style.transition = 'none'; });
+
+    flushSync(() => onSetDownloading?.(true));
+
+    try {
+      for (const scene of state.scenes) {
+        flushSync(() => dispatch({ type: 'SELECT_SHOT', id: scene.id }));
+        await new Promise<void>(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+        const url = await toPng(el, { pixelRatio: 2 });
+        dataUrls.push(url);
+      }
+
+      const images = await Promise.all(dataUrls.map(loadImage));
+
+      const GAP = 8;
+      const totalWidth = images.reduce((s, img) => s + img.width, 0) + GAP * (images.length - 1);
+      const maxHeight = Math.max(...images.map(img => img.height));
+
+      const canvas = document.createElement('canvas');
+      canvas.width = totalWidth;
+      canvas.height = maxHeight;
+      const ctx = canvas.getContext('2d')!;
+
+      let x = 0;
+      for (const img of images) {
+        ctx.drawImage(img, x, 0);
+        x += img.width + GAP;
+      }
+
+      const link = document.createElement('a');
+      link.download = 'rally_combined.png';
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+
+    } finally {
+      el.style.boxShadow = prev;
+      textarea?.setAttribute('placeholder', prevPlaceholder);
+      const restoreId = originalSceneId ?? state.scenes[state.scenes.length - 1]?.id ?? null;
+      flushSync(() => dispatch({ type: 'SELECT_SHOT', id: restoreId }));
+      // トランジションを元に戻す（次フレームで復元してガクつきを防ぐ）
+      requestAnimationFrame(() => {
+        charIcons.forEach(icon => { icon.style.transition = ''; });
+      });
       onSetDownloading?.(false);
     }
   }
@@ -59,7 +121,6 @@ export function EditPanel({ state, dispatch, onShotButtonClick, onCharClick, con
 
   const btn = 'h-11 rounded-xl flex items-center justify-center transition-colors duration-150 text-xs font-bold';
   const btnSlate = `${btn} bg-slate-700 hover:bg-slate-600 text-slate-200`;
-  const btnDanger = `${btn} w-11 bg-slate-700 hover:bg-rose-700 text-slate-400 hover:text-rose-200`;
 
   return (
     <div className="flex flex-col gap-2">
@@ -123,10 +184,15 @@ export function EditPanel({ state, dispatch, onShotButtonClick, onCharClick, con
           >
             リセット
           </button>
-          <button className={btnDanger} onClick={() => dispatch({ type: 'DELETE_SELECTED_SCENE' })}>
-            <IconTrash />
-          </button>
         </div>
+
+        {/* Row 3: くっつけてダウンロード */}
+        <button
+          className={`${btn} w-full bg-slate-700 hover:bg-sky-700 text-slate-300 hover:text-sky-100`}
+          onClick={handleDownloadCombined}
+        >
+          くっつけてダウンロード
+        </button>
       </div>
 
       <ShotSelector state={state} dispatch={dispatch} />

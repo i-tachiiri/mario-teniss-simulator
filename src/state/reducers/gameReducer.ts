@@ -43,6 +43,10 @@ export const initialState: GameStateData = {
 const clampCurve = (v: number) => Math.max(-10, Math.min(10, v));
 const newId = () => Date.now() + Math.floor(Math.random() * 1000);
 
+function makeEmptyScene(p1Pos: PixelPos, p2Pos: PixelPos): Scene {
+  return { id: newId(), p1Pos, p2Pos, subtitle: '', shots: [] };
+}
+
 /** 現在編集中のシーンIDを返す（selectedSceneId → 最終シーン → null） */
 function getEditId(state: GameStateData): number | null {
   return state.selectedSceneId ?? (state.scenes.length > 0 ? state.scenes[state.scenes.length - 1].id : null);
@@ -133,16 +137,24 @@ export function gameReducer(state: GameStateData, action: GameAction): GameState
       return baseState;
     }
 
-    case 'SET_DEFAULT_POSITIONS':
-      return {
+    case 'SET_DEFAULT_POSITIONS': {
+      const p1Px: PixelPos = { x: action.p1Pos.x, y: action.p1Pos.y };
+      const p2Px: PixelPos = { x: action.p2Pos.x, y: action.p2Pos.y };
+      const base = {
         ...state,
         p1Pos: action.p1Pos,
         p2Pos: action.p2Pos,
         p1DefaultPos: action.p1Pos,
         p2DefaultPos: action.p2Pos,
-        p1IconPos: { x: action.p1Pos.x, y: action.p1Pos.y },
-        p2IconPos: { x: action.p2Pos.x, y: action.p2Pos.y },
+        p1IconPos: p1Px,
+        p2IconPos: p2Px,
       };
+      if (state.scenes.length === 0) {
+        const scene = makeEmptyScene(p1Px, p2Px);
+        return { ...base, scenes: [scene], selectedSceneId: scene.id };
+      }
+      return base;
+    }
 
     case 'SET_CHARACTERS':
       return { ...state, p1CharName: action.p1, p2CharName: action.p2 };
@@ -433,18 +445,24 @@ export function gameReducer(state: GameStateData, action: GameAction): GameState
         scenes: state.scenes.map(s => (s.id === action.id ? { ...s, starPos: action.pos ?? undefined } : s)),
       };
 
-    case 'RESET_ALL':
+    case 'RESET_ALL': {
+      const p1Px = state.p1DefaultPos ? { x: state.p1DefaultPos.x, y: state.p1DefaultPos.y } : null;
+      const p2Px = state.p2DefaultPos ? { x: state.p2DefaultPos.x, y: state.p2DefaultPos.y } : null;
+      const scene = p1Px && p2Px ? makeEmptyScene(p1Px, p2Px) : null;
       return {
         ...initialState,
         p1DefaultPos: state.p1DefaultPos,
         p2DefaultPos: state.p2DefaultPos,
         p1Pos: state.p1DefaultPos,
         p2Pos: state.p2DefaultPos,
-        p1IconPos: state.p1DefaultPos ? { x: state.p1DefaultPos.x, y: state.p1DefaultPos.y } : null,
-        p2IconPos: state.p2DefaultPos ? { x: state.p2DefaultPos.x, y: state.p2DefaultPos.y } : null,
+        p1IconPos: p1Px,
+        p2IconPos: p2Px,
         p1CharName: state.p1CharName,
         p2CharName: state.p2CharName,
+        scenes: scene ? [scene] : [],
+        selectedSceneId: scene ? scene.id : null,
       };
+    }
 
     case 'RESET_CURRENT_SCENE': {
       const editId = getEditId(state);

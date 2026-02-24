@@ -68,6 +68,7 @@ export function ShotSelector({ state, dispatch }: Props) {
           </button>
         )}
 
+
         {reorderMode && selectedSceneId !== null && (
           <>
             <button

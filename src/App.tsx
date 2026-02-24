@@ -44,16 +44,10 @@ export function App() {
   function handleShotTypeSelect(type: ShotType) {
     setShotTypeSheetOpen(false);
     dispatch({ type: 'SET_SHOT_TYPE', shotType: type });
-    if (state.selectedSceneId !== null) {
-      dispatch({ type: 'SELECT_SHOT', id: null });
-    }
   }
 
   function handleCloseShotSheet() {
     setShotTypeSheetOpen(false);
-    if (state.selectedSceneId !== null) {
-      dispatch({ type: 'SELECT_SHOT', id: null });
-    }
   }
 
   function handlePickChar(name: string) {
