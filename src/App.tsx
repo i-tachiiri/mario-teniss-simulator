@@ -94,7 +94,7 @@ export function App() {
       </div>
 
       {/* コントロールカラム */}
-      <div className="flex-1 min-h-0 overflow-y-auto px-2 pb-4 flex flex-col gap-3 lg:flex-none lg:w-96 lg:px-3 lg:py-6 lg:overflow-y-auto">
+      <div className="relative z-[50] flex-1 min-h-0 overflow-y-auto px-2 pb-4 flex flex-col gap-3 lg:flex-none lg:w-96 lg:px-3 lg:py-6 lg:overflow-y-auto">
 
         {/* キャラ選択: デスクトップのみ常時表示 */}
         <div className="hidden lg:block bg-slate-800 rounded-2xl px-3 py-3 shadow-lg">

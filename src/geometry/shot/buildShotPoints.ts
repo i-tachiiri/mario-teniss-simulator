@@ -25,7 +25,11 @@ function intersectRayCircle(
   const c = ocx * ocx + ocy * ocy - radius * radius;
   const disc = b * b - 4 * c; // a=1 (dir は正規化済み)
   if (disc < 0) return null;
-  const t = (-b - Math.sqrt(disc)) / 2;
+  const sqrtDisc = Math.sqrt(disc);
+  const t1 = (-b - sqrtDisc) / 2;
+  const t2 = (-b + sqrtDisc) / 2;
+  // origin が円の内側（t1 ≤ 0）の場合は脱出点 t2 を使用
+  const t = t1 > 0 ? t1 : t2;
   if (t <= 0) return null;
   return { x: origin.x + dir.x * t, y: origin.y + dir.y * t };
 }
