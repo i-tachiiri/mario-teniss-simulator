@@ -1,8 +1,8 @@
-import type { PixelPos, Position, ShotPhase, ShotStep, ShotType } from '../../types';
+import type { PixelPos, Position, ShotPhase, ShotStep, ShotType } from '../../domain/types';
 import type { GameAction } from '../actions/gameActions';
 import { computeReturnAndSide } from '../../geometry/shot/returnAndSide';
 import { getHitFrom } from '../../geometry/shot/hitFrom';
-import { positionToPixelPos } from '../../geometry/coord';
+import { positionToPixelPos } from '../../geometry/coord/coordUtils';
 
 export interface GameStateData {
   p1Pos: Position | null;
@@ -74,8 +74,22 @@ export function gameReducer(state: GameStateData, action: GameAction): GameState
     case 'SET_PLAYER_POS': {
       const pos: Position = { r: 0, c: 0, x: action.x, y: action.y };
       const iconPos: PixelPos = { x: action.x, y: action.y };
-      if (action.player === 'p1') return { ...state, p1Pos: pos, p1IconPos: iconPos };
-      return { ...state, p2Pos: pos, p2IconPos: iconPos };
+      const baseState = action.player === 'p1'
+        ? { ...state, p1Pos: pos, p1IconPos: iconPos }
+        : { ...state, p2Pos: pos, p2IconPos: iconPos };
+
+      // 編集中のショットのヒッター側が動いた場合、hitFrom を追従させる
+      // activeSide='top'（上コートにバウンド）→ 下コート側の P1 がヒッター
+      const isHitter = (action.player === 'p1' && state.activeSide === 'top') ||
+                       (action.player === 'p2' && state.activeSide === 'bottom');
+      const editId = state.shotPhase.status === 'editing' ? getEditId(state) : null;
+      if (editId !== null && isHitter) {
+        return {
+          ...baseState,
+          rallySteps: state.rallySteps.map(s => s.id === editId ? { ...s, hitFrom: iconPos } : s),
+        };
+      }
+      return baseState;
     }
 
     case 'SET_DEFAULT_POSITIONS':
@@ -284,6 +298,25 @@ export function gameReducer(state: GameStateData, action: GameAction): GameState
         p1CharName: state.p1CharName,
         p2CharName: state.p2CharName,
       };
+
+    case 'RESET_CURRENT_SCENE': {
+      // 現在の局面を削除し、両アイコンをデフォルト位置に戻す。他のrallyStepsは変更しない。
+      const editId = getEditId(state);
+      if (!editId || !state.p1DefaultPos || !state.p2DefaultPos) return state;
+      const p1Default: PixelPos = { x: state.p1DefaultPos.x, y: state.p1DefaultPos.y };
+      const p2Default: PixelPos = { x: state.p2DefaultPos.x, y: state.p2DefaultPos.y };
+      const remaining = state.rallySteps.filter(s => s.id !== editId);
+      const last = remaining[remaining.length - 1];
+      return {
+        ...state,
+        rallySteps: remaining,
+        shotPhase: remaining.length === 0 ? { status: 'idle' } : { status: 'editing' },
+        selectedShotId: last ? last.id : null,
+        subtitleDraft: last ? last.subtitle : '',
+        p1IconPos: p1Default,
+        p2IconPos: p2Default,
+      };
+    }
 
     default:
       return state;

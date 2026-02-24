@@ -1,4 +1,4 @@
-import type { PixelPos } from '../../types';
+import type { PixelPos } from '../../domain/types';
 
 export function normalize(dx: number, dy: number): PixelPos | null {
   const len = Math.hypot(dx, dy);

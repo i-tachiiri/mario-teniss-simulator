@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { ShotType } from '../types';
+import type { ShotType } from '../domain/types';
 
 export interface PlayingShot { pathD: string; type: ShotType }
 

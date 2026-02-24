@@ -1,4 +1,4 @@
-import type { PixelPos, ShotStep } from '../../types';
+import type { PixelPos, ShotStep } from '../../domain/types';
 import { normalize } from '../math/vector';
 import { pointsToPathD } from '../path/pointsToPathD';
 import { buildShotPoints } from './buildShotPoints';

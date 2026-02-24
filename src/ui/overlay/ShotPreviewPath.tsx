@@ -1,6 +1,6 @@
-import type { PixelPos, ShotType } from '../../types';
+import type { PixelPos, ShotType } from '../../domain/types';
 import { SHOT_CONFIGS } from '../../config';
-import { computeSceneVisual } from '../../geometry/shot/path';
+import { computeSceneVisual } from '../../geometry/shot/computeShotPathD';
 
 interface Props {
   hitFrom: PixelPos;

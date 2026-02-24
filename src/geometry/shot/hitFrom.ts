@@ -1,4 +1,4 @@
-import type { PixelPos, Position, ShotStep } from '../../types';
+import type { PixelPos, Position, ShotStep } from '../../domain/types';
 
 export function getHitFrom(
   rallySteps: ShotStep[],

@@ -1,4 +1,4 @@
-import type { PixelPos } from '../../types';
+import type { PixelPos } from '../../domain/types';
 import { projectToRayFromBounce } from '../math/projection';
 
 export function computeReturnAndSide(

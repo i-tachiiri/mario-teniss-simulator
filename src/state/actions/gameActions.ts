@@ -1,4 +1,4 @@
-import type { PixelPos, Position, ShotType } from '../../types';
+import type { PixelPos, Position, ShotType } from '../../domain/types';
 
 export type GameAction =
   | { type: 'SET_SHOT_TYPE'; shotType: ShotType }
@@ -17,4 +17,5 @@ export type GameAction =
   | { type: 'SET_SUBTITLE_DRAFT'; subtitle: string }
   | { type: 'UNDO_LAST' }
   | { type: 'RESET_ALL' }
+  | { type: 'RESET_CURRENT_SCENE' }
   | { type: 'SET_STAR_POS'; id: number; pos: PixelPos | null };

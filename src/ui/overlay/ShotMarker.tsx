@@ -17,7 +17,7 @@ export function ShotMarker({ x, y, color, onClick, clickable }: Props) {
         left: x,
         top: y,
         cursor: clickable ? 'pointer' : undefined,
-        zIndex: clickable ? 55 : undefined,
+        zIndex: clickable ? 48 : undefined,
         pointerEvents: clickable ? 'auto' : undefined,
       }}
       onClick={onClick}

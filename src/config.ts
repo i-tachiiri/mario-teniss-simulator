@@ -1,4 +1,4 @@
-import type { ShotType, ShotConfig } from './types';
+import type { ShotType, ShotConfig } from './domain/types';
 
 /** アイコンは 44×44px。カーソルをアイコン中央に合わせるためのオフセット。
  *  CharIcon.tsx / useDragIcon.ts / useRallyAnimation.ts で共有。*/

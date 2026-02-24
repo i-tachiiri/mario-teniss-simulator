@@ -1,4 +1,4 @@
-import type { PixelPos, Position } from '../../types';
+import type { PixelPos, Position } from '../../domain/types';
 
 /**
  * コンテナ要素に対する el の中心座標と行・列インデックスを返す。

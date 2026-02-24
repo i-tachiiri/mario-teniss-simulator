@@ -1,4 +1,4 @@
-import type { ShotType } from '../../types';
+import type { ShotType } from '../../domain/types';
 import { SHOT_CONFIGS } from '../../config';
 
 interface Props {

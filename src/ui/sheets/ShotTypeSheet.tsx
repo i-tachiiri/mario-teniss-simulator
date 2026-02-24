@@ -1,4 +1,4 @@
-import type { ShotType } from '../../types';
+import type { ShotType } from '../../domain/types';
 import { BottomSheet } from './BottomSheet';
 
 const SHOT_BUTTONS: { id: ShotType; label: string; className: string }[] = [

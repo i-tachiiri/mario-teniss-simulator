@@ -8,7 +8,7 @@ import { EditPanel } from './ui/panels/EditPanel';
 import { SubtitleBar } from './ui/court/SubtitleBar';
 import { ShotTypeSheet } from './ui/sheets/ShotTypeSheet';
 import { CharPickerSheet } from './ui/sheets/CharPickerSheet';
-import type { ShotType } from './types';
+import type { ShotType } from './domain/types';
 
 export function App() {
   const { state, dispatch, isAwaitingReturn, canReposition } = useGameState();
@@ -98,8 +98,7 @@ export function App() {
             }
             setShotTypeSheetOpen(true);
           }}
-          onP1Click={() => { setSelectingPlayer('p1'); setCharSheetOpen(true); }}
-          onP2Click={() => { setSelectingPlayer('p2'); setCharSheetOpen(true); }}
+          onCharClick={() => { setSelectingPlayer('p1'); setCharSheetOpen(true); }}
           containerRef={containerRef}
         />
       </div>

@@ -7,7 +7,7 @@ import { ShotPreviewPath } from './ShotPreviewPath';
 import { ShotMarker } from './ShotMarker';
 import { ForeBackLabel } from './ForeBackLabel';
 import { StarMarker } from './StarMarker';
-import { computeSceneVisual } from '../../geometry/shot/path';
+import { computeSceneVisual } from '../../geometry/shot/computeShotPathD';
 
 interface Props {
   state: GameStateData;

@@ -1,4 +1,4 @@
-import type { PixelPos } from '../../types';
+import type { PixelPos } from '../../domain/types';
 
 export function projectToRayFromBounce(
   hitFrom: PixelPos,

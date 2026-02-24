@@ -1,6 +1,6 @@
-import type { PixelPos } from '../../types';
+import type { PixelPos } from '../../domain/types';
 import { normalize } from '../math/vector';
-import { computeExtensionEndpoint } from './extension';
+import { computeEndpointToCourtEdge as computeExtensionEndpoint } from '../math/intersection';
 import { ICON_HALF_SIZE } from '../../config';
 
 function computePointByDistance(from: PixelPos, toward: PixelPos, dist: number): PixelPos | null {
