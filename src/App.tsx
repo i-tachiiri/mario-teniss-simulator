@@ -62,7 +62,7 @@ export function App() {
 
       {/* コートカラム: モバイル=全幅, デスクトップ=高さから幅を逆算 */}
       <div className="shrink-0 px-2 pt-2 lg:px-0 lg:py-6 lg:overflow-hidden">
-        <div className="w-full lg:w-[calc(60dvh-56px)]">
+        <div className="w-full max-w-[calc((80dvh-112px)*0.6+40px)] mx-auto lg:max-w-none lg:mx-0 lg:w-[calc(60dvh-56px)]">
           <Court
             dispatch={dispatch}
             containerRef={containerRef}
@@ -106,19 +106,21 @@ export function App() {
           />
         </div>
 
-        <EditPanel
-          state={state}
-          dispatch={dispatch}
-          onSetDownloading={setIsDownloading}
-          onShotButtonClick={() => {
-            if (state.selectedSceneId === null && state.scenes.length > 0) {
-              dispatch({ type: 'SELECT_SHOT', id: state.scenes[state.scenes.length - 1].id });
-            }
-            setShotTypeSheetOpen(true);
-          }}
-          onCharClick={() => { setSelectingPlayer('p1'); setCharSheetOpen(true); }}
-          containerRef={containerRef}
-        />
+        <div className="w-full max-w-[calc((80dvh-112px)*0.6+40px)] mx-auto lg:max-w-none lg:mx-0">
+          <EditPanel
+            state={state}
+            dispatch={dispatch}
+            onSetDownloading={setIsDownloading}
+            onShotButtonClick={() => {
+              if (state.selectedSceneId === null && state.scenes.length > 0) {
+                dispatch({ type: 'SELECT_SHOT', id: state.scenes[state.scenes.length - 1].id });
+              }
+              setShotTypeSheetOpen(true);
+            }}
+            onCharClick={() => { setSelectingPlayer('p1'); setCharSheetOpen(true); }}
+            containerRef={containerRef}
+          />
+        </div>
       </div>
 
       <ShotTypeSheet
