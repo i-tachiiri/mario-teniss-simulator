@@ -1,8 +1,5 @@
 import type { PixelPos, Position, Scene, Shot, ShotPhase, ShotType } from '../../domain/types';
 import type { GameAction } from '../actions/gameActions';
-import { computeReturnAt } from '../../geometry/shot/returnAndSide';
-import { getHitFrom } from '../../geometry/shot/hitFrom';
-import { positionToPixelPos } from '../../geometry/coord/coordUtils';
 
 export interface GameStateData {
   p1DefaultPos: Position | null;
@@ -74,22 +71,17 @@ function getSelectedShotId(state: GameStateData, scene: Scene): number | null {
 /**
  * プレイヤー位置変更に応じて全ショットを更新する。
  * そのプレイヤーが打つショット → hitFrom を更新
- * そのプレイヤーが受けるショット → returnAt を更新（selectedShotId 指定時はそのショットのみ projectedReturnAt を使用）
+ * そのプレイヤーが受けるショット → returnAt を更新
  */
 function updateShotsForPlayerMove(
   shots: Shot[],
   player: 'p1' | 'p2',
   pos: PixelPos,
-  selectedShotId?: number | null,
-  projectedReturnAt?: PixelPos,
 ): Shot[] {
   return shots.map(sh => {
     const hitsThisShot = player === 'p1' ? sh.bounceAt.r < 5 : sh.bounceAt.r >= 5;
     if (hitsThisShot) return { ...sh, hitFrom: pos };
-    const returnAtValue = projectedReturnAt != null && sh.id === selectedShotId
-      ? projectedReturnAt
-      : pos;
-    return { ...sh, returnAt: returnAtValue };
+    return { ...sh, returnAt: pos };
   });
 }
 
@@ -181,9 +173,9 @@ export function gameReducer(state: GameStateData, action: GameAction): GameState
       const editId = getEditId(state);
 
       if (editId !== null) {
-        const priorScenes = state.scenes.filter(s => s.id !== editId);
         const { p1: sceneP1, p2: sceneP2 } = getSceneIconPositions(state);
-        const hitFrom = getHitFrom(priorScenes, activeSide, sceneP1, sceneP2);
+        const hitter = activeSide === 'top' ? sceneP1 : sceneP2;
+        const hitFrom = hitter ?? { x: bounceAt.x, y: bounceAt.y };
 
         if (state.selectedShotId === null) {
           const receiverIconPos = activeSide === 'top' ? sceneP2 : sceneP1;
@@ -221,7 +213,8 @@ export function gameReducer(state: GameStateData, action: GameAction): GameState
       }
 
       const { p1: sceneP1_, p2: sceneP2_ } = getSceneIconPositions(state);
-      const hitFrom = getHitFrom([], activeSide, sceneP1_, sceneP2_);
+      const hitter_ = activeSide === 'top' ? sceneP1_ : sceneP2_;
+      const hitFrom = hitter_ ?? { x: bounceAt.x, y: bounceAt.y };
       const receiverIconPos = activeSide === 'top' ? sceneP2_ : sceneP1_;
       const defaultReturnAt = receiverIconPos ?? { x: bounceAt.x, y: bounceAt.y };
       const shotId = newId();
@@ -260,16 +253,9 @@ export function gameReducer(state: GameStateData, action: GameAction): GameState
       const selectedShot = getSelectedShot(state, scene);
       if (!selectedShot) return state;
 
-      const returnAt = computeReturnAt(
-        selectedShot.hitFrom,
-        positionToPixelPos(selectedShot.bounceAt),
-        action.iconX,
-        action.iconY,
-      );
       const bounceInBottom = selectedShot.bounceAt.r >= 5;
       const receiverPlayer: 'p1' | 'p2' = bounceInBottom ? 'p1' : 'p2';
       const receiverPos: PixelPos = { x: action.iconX, y: action.iconY };
-      const shotId = getSelectedShotId(state, scene);
       return {
         ...state,
         scenes: state.scenes.map(s => {
@@ -278,7 +264,7 @@ export function gameReducer(state: GameStateData, action: GameAction): GameState
             ...s,
             p1Pos: bounceInBottom ? receiverPos : s.p1Pos,
             p2Pos: !bounceInBottom ? receiverPos : s.p2Pos,
-            shots: updateShotsForPlayerMove(s.shots, receiverPlayer, receiverPos, shotId, returnAt),
+            shots: updateShotsForPlayerMove(s.shots, receiverPlayer, receiverPos),
           };
         }),
       };
@@ -352,12 +338,6 @@ export function gameReducer(state: GameStateData, action: GameAction): GameState
       const lastScene = state.scenes[state.scenes.length - 1];
       const lastShot = lastScene.shots[lastScene.shots.length - 1];
       if (!lastShot) return state;
-      const returnAt = computeReturnAt(
-        lastShot.hitFrom,
-        positionToPixelPos(lastShot.bounceAt),
-        action.iconX,
-        action.iconY,
-      );
       const receiverPos: PixelPos = { x: action.iconX, y: action.iconY };
       const bounceInBottom = lastShot.bounceAt.r >= 5;
       const receiverPlayer: 'p1' | 'p2' = bounceInBottom ? 'p1' : 'p2';
@@ -365,7 +345,7 @@ export function gameReducer(state: GameStateData, action: GameAction): GameState
         ...lastScene,
         p1Pos: bounceInBottom ? receiverPos : lastScene.p1Pos,
         p2Pos: !bounceInBottom ? receiverPos : lastScene.p2Pos,
-        shots: updateShotsForPlayerMove(lastScene.shots, receiverPlayer, receiverPos, lastShot.id, returnAt),
+        shots: updateShotsForPlayerMove(lastScene.shots, receiverPlayer, receiverPos),
       };
       return { ...state, scenes: [...state.scenes.slice(0, -1), updatedScene] };
     }
