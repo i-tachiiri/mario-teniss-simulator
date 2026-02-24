@@ -113,6 +113,12 @@ export function ShotSelector({ state, dispatch }: Props) {
           );
         })}
 
+        {state.shotPhase.status === 'awaiting_bounce' && currentScene != null && (
+          <span className="w-8 h-8 rounded-full text-xs font-black border-2 border-dashed border-indigo-400 text-indigo-400 flex items-center justify-center select-none">
+            {visibleShots.length + 1}
+          </span>
+        )}
+
         <button
           className="w-8 h-8 rounded-full text-sm font-black bg-slate-700 text-slate-400 hover:bg-indigo-600 hover:text-white border border-slate-600 hover:border-indigo-500 transition-all duration-150"
           onClick={() => dispatch({ type: 'ADD_SHOT' })}

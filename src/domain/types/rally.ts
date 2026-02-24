@@ -35,7 +35,8 @@ export interface Scene {
 
 export type ShotPhase =
   | { status: 'idle' }
-  | { status: 'editing' };
+  | { status: 'editing' }
+  | { status: 'awaiting_bounce' };
 
 export interface ShotConfig {
   color: string;

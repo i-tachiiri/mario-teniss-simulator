@@ -301,7 +301,7 @@ export function gameReducer(state: GameStateData, action: GameAction): GameState
       return {
         ...state,
         selectedShotId: null,
-        shotPhase: { status: 'idle' },
+        shotPhase: { status: 'awaiting_bounce' },
       };
     }
 
