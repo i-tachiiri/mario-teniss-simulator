@@ -182,6 +182,10 @@ export function gameReducer(state: GameStateData, action: GameAction): GameState
         const shot = state.rallySteps.find(s => s.id === action.id);
         if (shot) {
           const activeSide: 'top' | 'bottom' = shot.bounceAt.r < 5 ? 'top' : 'bottom';
+          // bounceAt が下コート(r>=5) → P2がヒッター(hitFrom=P2)・P1がレシーバー(playerAt=P1)
+          const isBottomBounce = shot.bounceAt.r >= 5;
+          const p1IconPos = isBottomBounce ? shot.playerAt : shot.hitFrom;
+          const p2IconPos = isBottomBounce ? shot.hitFrom  : shot.playerAt;
           return {
             ...state,
             selectedShotId: action.id,
@@ -189,6 +193,8 @@ export function gameReducer(state: GameStateData, action: GameAction): GameState
             subtitleDraft: shot.subtitle,
             activeSide,
             shotPhase: { status: 'editing' },
+            p1IconPos,
+            p2IconPos,
           };
         }
       }
