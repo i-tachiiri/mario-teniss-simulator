@@ -94,10 +94,17 @@ export function buildShotPoints(params: {
     computeExtensionEndpoint(bouncePx, extendDir, containerSize) ??
     returnPx;
 
+  // ドロップ・飛びつき: アイコンが2バウンド目より手前なら iconHit で止める
+  const returnPxForShot = (isDropLike || isJumpLike)
+    ? (iconHit && Math.hypot(iconHit.x - bouncePx.x, iconHit.y - bouncePx.y) < shortDist
+        ? iconHit
+        : bounce2Px)
+    : endPx;
+
   return {
     hitFromPx,
     bouncePx,
-    returnPx: isDropLike || isJumpLike ? bounce2Px : endPx,
+    returnPx: returnPxForShot,
     markers: [bouncePx, bounce2Px],
   };
 }
