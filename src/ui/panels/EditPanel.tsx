@@ -69,7 +69,7 @@ export function EditPanel({ state, dispatch, onShotButtonClick, onCharClick, con
     try {
       for (const scene of state.scenes) {
         flushSync(() => dispatch({ type: 'SELECT_SHOT', id: scene.id }));
-        await new Promise<void>(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+        await new Promise<void>(r => requestAnimationFrame(() => requestAnimationFrame(() => r())));
         const url = await toPng(el, { pixelRatio: 2 });
         dataUrls.push(url);
       }
