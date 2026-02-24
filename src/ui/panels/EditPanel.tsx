@@ -126,7 +126,7 @@ export function EditPanel({ state, dispatch, onShotButtonClick, onCharClick, con
     <div className="flex flex-col gap-2">
       <div className="bg-slate-800 rounded-2xl px-3 py-3 shadow-lg flex flex-col gap-2.5">
 
-        {/* Row 1: 球種・キャラ・ダウンロード・★ */}
+        {/* Row 1: 球種・キャラ・左曲・右曲・★ */}
         <div className="flex items-center gap-2">
           <button
             className={`flex-1 ${btn} bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white tracking-widest`}
@@ -141,10 +141,16 @@ export function EditPanel({ state, dispatch, onShotButtonClick, onCharClick, con
             キャラ
           </button>
           <button
-            className={`flex-1 ${btn} bg-slate-700 hover:bg-sky-700 text-slate-300 hover:text-sky-100`}
-            onClick={handleDownload}
+            className={`flex-1 ${btnSlate}`}
+            onClick={e => { e.stopPropagation(); dispatch({ type: 'SET_SHOT_CURVE', delta: -1 }); }}
           >
-            ダウンロード
+            左曲
+          </button>
+          <button
+            className={`flex-1 ${btnSlate}`}
+            onClick={e => { e.stopPropagation(); dispatch({ type: 'SET_SHOT_CURVE', delta: 1 }); }}
+          >
+            右曲
           </button>
           <button
             disabled={starDisabled}
@@ -164,35 +170,27 @@ export function EditPanel({ state, dispatch, onShotButtonClick, onCharClick, con
           </button>
         </div>
 
-        {/* Row 2: 左曲・右曲・リセット・削除 */}
+        {/* Row 2: リセット・ダウンロード・くっつけてダウンロード */}
         <div className="flex items-center gap-2">
-          <button
-            className={`flex-1 ${btnSlate}`}
-            onClick={e => { e.stopPropagation(); dispatch({ type: 'SET_SHOT_CURVE', delta: -1 }); }}
-          >
-            左曲
-          </button>
-          <button
-            className={`flex-1 ${btnSlate}`}
-            onClick={e => { e.stopPropagation(); dispatch({ type: 'SET_SHOT_CURVE', delta: 1 }); }}
-          >
-            右曲
-          </button>
           <button
             className={`flex-1 ${btn} bg-slate-700 hover:bg-rose-800 text-slate-400 hover:text-rose-200`}
             onClick={() => dispatch({ type: 'RESET_CURRENT_SCENE' })}
           >
             リセット
           </button>
+          <button
+            className={`flex-1 ${btn} bg-slate-700 hover:bg-sky-700 text-slate-300 hover:text-sky-100`}
+            onClick={handleDownload}
+          >
+            ダウンロード
+          </button>
+          <button
+            className={`flex-1 ${btn} bg-slate-700 hover:bg-sky-700 text-slate-300 hover:text-sky-100 leading-tight whitespace-normal text-center`}
+            onClick={handleDownloadCombined}
+          >
+            くっつけて<br />ダウンロード
+          </button>
         </div>
-
-        {/* Row 3: くっつけてダウンロード */}
-        <button
-          className={`${btn} w-full bg-slate-700 hover:bg-sky-700 text-slate-300 hover:text-sky-100`}
-          onClick={handleDownloadCombined}
-        >
-          くっつけてダウンロード
-        </button>
       </div>
 
       <ShotSelector state={state} dispatch={dispatch} />
