@@ -67,11 +67,8 @@ export function App() {
     <div className="bg-slate-700 h-dvh font-sans overflow-hidden flex flex-col gap-3 lg:flex-row lg:gap-0 lg:justify-center">
 
       {/* コートカラム: モバイル=全幅, デスクトップ=高さから幅を逆算 */}
-      <div
-        className="shrink-0 px-2 pt-2 lg:p-0 lg:overflow-hidden"
-        style={{ ['--court-w' as string]: 'calc(60dvh - 27px)' }}
-      >
-        <div className="w-full lg:w-[calc(60dvh-27px)]">
+      <div className="shrink-0 px-2 pt-2 lg:px-0 lg:py-6 lg:overflow-hidden">
+        <div className="w-full lg:w-[calc(60dvh-56px)]">
           <Court
             dispatch={dispatch}
             containerRef={containerRef}
@@ -102,7 +99,7 @@ export function App() {
       </div>
 
       {/* コントロールカラム */}
-      <div className="flex-1 min-h-0 overflow-y-auto px-2 pb-4 flex flex-col gap-3 lg:flex-none lg:w-80 lg:px-3 lg:py-3">
+      <div className="flex-1 min-h-0 overflow-y-auto px-2 pb-4 flex flex-col gap-3 lg:flex-none lg:w-96 lg:px-3 lg:py-6 lg:overflow-y-auto">
 
         {/* キャラ選択: デスクトップのみ常時表示 */}
         <div className="hidden lg:block bg-slate-800 rounded-2xl px-3 py-3 shadow-lg">
