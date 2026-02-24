@@ -63,48 +63,52 @@ export function App() {
   }
 
   return (
-    <div className="bg-slate-700 min-h-screen font-sans">
-      <div className="max-w-md mx-auto flex flex-col gap-3 px-2 py-2 pb-6">
-        <Court
-          dispatch={dispatch}
-          containerRef={containerRef}
-        >
-          <SvgLayer
+    <div className="bg-slate-700 h-dvh flex flex-col font-sans overflow-hidden">
+      <div className="max-w-md w-full mx-auto flex flex-col gap-3 px-2 pt-2 flex-1 min-h-0">
+        <div className="shrink-0">
+          <Court
+            dispatch={dispatch}
+            containerRef={containerRef}
+          >
+            <SvgLayer
+              state={state}
+              dispatch={dispatch}
+              draggingTo={receiverDragPos}
+              containerRef={containerRef}
+              onShotMarkerClick={() => setShotTypeSheetOpen(true)}
+              dimNonSelected={!isDownloading}
+            />
+            <CharIcon
+              ref={p1Ref}
+              charName={state.p1CharName}
+              alt="P1"
+              pos={state.p1IconPos}
+            />
+            <CharIcon
+              ref={p2Ref}
+              charName={state.p2CharName}
+              alt="P2"
+              pos={state.p2IconPos}
+            />
+            <SubtitleBar state={state} dispatch={dispatch} />
+          </Court>
+        </div>
+
+        <div className="flex-1 min-h-0 overflow-y-auto pb-4">
+          <EditPanel
             state={state}
             dispatch={dispatch}
-            draggingTo={receiverDragPos}
+            onSetDownloading={setIsDownloading}
+            onShotButtonClick={() => {
+              if (state.selectedSceneId === null && state.scenes.length > 0) {
+                dispatch({ type: 'SELECT_SHOT', id: state.scenes[state.scenes.length - 1].id });
+              }
+              setShotTypeSheetOpen(true);
+            }}
+            onCharClick={() => { setSelectingPlayer('p1'); setCharSheetOpen(true); }}
             containerRef={containerRef}
-            onShotMarkerClick={() => setShotTypeSheetOpen(true)}
-            dimNonSelected={!isDownloading}
           />
-          <CharIcon
-            ref={p1Ref}
-            charName={state.p1CharName}
-            alt="P1"
-            pos={state.p1IconPos}
-          />
-          <CharIcon
-            ref={p2Ref}
-            charName={state.p2CharName}
-            alt="P2"
-            pos={state.p2IconPos}
-          />
-          <SubtitleBar state={state} dispatch={dispatch} />
-        </Court>
-
-        <EditPanel
-          state={state}
-          dispatch={dispatch}
-          onSetDownloading={setIsDownloading}
-          onShotButtonClick={() => {
-            if (state.selectedSceneId === null && state.scenes.length > 0) {
-              dispatch({ type: 'SELECT_SHOT', id: state.scenes[state.scenes.length - 1].id });
-            }
-            setShotTypeSheetOpen(true);
-          }}
-          onCharClick={() => { setSelectingPlayer('p1'); setCharSheetOpen(true); }}
-          containerRef={containerRef}
-        />
+        </div>
       </div>
 
       <ShotTypeSheet
