@@ -46,6 +46,21 @@ export function SvgLayer({ state, dispatch, draggingTo, containerRef, onShotMark
     ? (selectedShot.bounceAt.r >= 5 ? sceneToShow!.p1Pos : sceneToShow!.p2Pos)
     : null;
 
+  // 番号ラベル・DOM マーカー用に sh.returnAt ベースで事前計算（draggingTo 不使用）
+  const markerVisuals = new Map(allShots.map(sh => {
+    const isSelected = sh.id === selectedShot?.id;
+    const shotType = isEditing && isSelected ? activeShotType : sh.type;
+    return [sh.id, computeSceneVisual({
+      hitFrom: sh.hitFrom,
+      bounce1: { x: sh.bounceAt.x, y: sh.bounceAt.y },
+      returnAt: sh.returnAt,
+      type: shotType,
+      bendLevel: sh.curveLevel,
+      baseCurve: SHOT_CONFIGS[shotType].curveAmount,
+      containerSize: size,
+    })];
+  }));
+
   return (
     <>
       <svg className="absolute top-0 left-0 w-full h-full pointer-events-none" style={{ zIndex: 30 }}>
@@ -96,9 +111,10 @@ export function SvgLayer({ state, dispatch, draggingTo, containerRef, onShotMark
 
         {/* フォア/バックラベル（選択中ショットのみ） */}
 
-        {/* ショット番号ラベル */}
+        {/* ショット番号ラベル（バウンドなし＝途中遮断の場合は非表示） */}
         {showNumbers && allShots.map((sh, idx) => {
           const isSelected = sh.id === selectedShot?.id;
+          if ((markerVisuals.get(sh.id)?.markers.length ?? 0) === 0) return null;
           return (
             <g key={`label-${sh.id}`} opacity={isSelected ? 1 : (dimNonSelected ? DIM_OPACITY + 0.15 : 1)}>
               <circle cx={sh.bounceAt.x} cy={sh.bounceAt.y - 18} r={9} fill={isSelected ? '#6366f1' : '#334155'} />
@@ -123,16 +139,8 @@ export function SvgLayer({ state, dispatch, draggingTo, containerRef, onShotMark
         const isSelected = sh.id === selectedShot?.id;
         const shotType = isEditing && isSelected ? activeShotType : sh.type;
         const markerOpacity = isSelected ? undefined : (dimNonSelected ? DIM_OPACITY : undefined);
-
-        const visual = computeSceneVisual({
-          hitFrom: sh.hitFrom,
-          bounce1: { x: sh.bounceAt.x, y: sh.bounceAt.y },
-          returnAt: sh.returnAt,
-          type: shotType,
-          bendLevel: sh.curveLevel,
-          baseCurve: SHOT_CONFIGS[shotType].curveAmount,
-          containerSize: size,
-        });
+        const visual = markerVisuals.get(sh.id);
+        const hasBounce = (visual?.markers.length ?? 0) > 0;
 
         return (
           <span key={`markers-${sh.id}`}>
@@ -144,14 +152,16 @@ export function SvgLayer({ state, dispatch, draggingTo, containerRef, onShotMark
               opacity={markerOpacity}
               onClick={isSelected ? e => { e.stopPropagation(); onShotMarkerClick(); } : undefined}
             />
-            <ShotMarker
-              x={sh.bounceAt.x}
-              y={sh.bounceAt.y}
-              color="#ef4444"
-              clickable={isSelected}
-              opacity={markerOpacity}
-              onClick={isSelected ? e => { e.stopPropagation(); onShotMarkerClick(); } : undefined}
-            />
+            {hasBounce && (
+              <ShotMarker
+                x={sh.bounceAt.x}
+                y={sh.bounceAt.y}
+                color="#ef4444"
+                clickable={isSelected}
+                opacity={markerOpacity}
+                onClick={isSelected ? e => { e.stopPropagation(); onShotMarkerClick(); } : undefined}
+              />
+            )}
             {isSelected && visual?.markers.slice(1).map((marker, idx) => (
               <ShotMarker key={`extra-bounce-${idx}`} x={marker.x} y={marker.y} color="#ef4444" />
             ))}

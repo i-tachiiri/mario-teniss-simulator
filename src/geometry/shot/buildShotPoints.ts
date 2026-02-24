@@ -74,7 +74,18 @@ export function buildShotPoints(params: {
     return { hitFromPx, bouncePx, returnPx: endPx, markers: [bouncePx] };
   }
 
-  // returnPxが確定している場合: 軌道方向はそのまま、アイコンと交差すれば縁で止める
+  // returnPxが確定している場合: 第1セグメント（hitFrom→bounce）でアイコンと交差するか先に確認
+  const rayDir1 = normalize(bouncePx.x - hitFromPx.x, bouncePx.y - hitFromPx.y);
+  const seg1Dist = Math.hypot(bouncePx.x - hitFromPx.x, bouncePx.y - hitFromPx.y);
+  const iconHit1 = rayDir1
+    ? intersectRayCircle(hitFromPx, rayDir1, returnPx, ICON_HALF_SIZE)
+    : null;
+  if (iconHit1 && Math.hypot(iconHit1.x - hitFromPx.x, iconHit1.y - hitFromPx.y) < seg1Dist) {
+    // バウンド前にアイコンに当たる → 第1セグメントをアイコン縁で止める
+    return { hitFromPx, bouncePx: iconHit1, returnPx: iconHit1, markers: [] };
+  }
+
+  // 第2セグメントの計算
   const extendDir = arrivalDir
     ? { x: bouncePx.x + arrivalDir.x, y: bouncePx.y + arrivalDir.y }
     : { x: bouncePx.x * 2 - hitFromPx.x, y: bouncePx.y * 2 - hitFromPx.y };
@@ -95,16 +106,15 @@ export function buildShotPoints(params: {
     returnPx;
 
   // ドロップ・飛びつき: アイコンが2バウンド目より手前なら iconHit で止める
+  const intercepted2nd = Boolean(iconHit) &&
+    Math.hypot(iconHit!.x - bouncePx.x, iconHit!.y - bouncePx.y) < shortDist;
   const returnPxForShot = (isDropLike || isJumpLike)
-    ? (iconHit && Math.hypot(iconHit.x - bouncePx.x, iconHit.y - bouncePx.y) < shortDist
-        ? iconHit
-        : bounce2Px)
+    ? (intercepted2nd ? iconHit! : bounce2Px)
     : endPx;
+  // 途中で止まった場合、それ以降のバウンド点はマーカーに含めない
+  const markers = (isDropLike || isJumpLike) && !intercepted2nd
+    ? [bouncePx, bounce2Px]
+    : [bouncePx];
 
-  return {
-    hitFromPx,
-    bouncePx,
-    returnPx: returnPxForShot,
-    markers: [bouncePx, bounce2Px],
-  };
+  return { hitFromPx, bouncePx, returnPx: returnPxForShot, markers };
 }
