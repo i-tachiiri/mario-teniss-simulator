@@ -8,6 +8,7 @@ import { EditPanel } from './ui/panels/EditPanel';
 import { SubtitleBar } from './ui/court/SubtitleBar';
 import { ShotTypeSheet } from './ui/sheets/ShotTypeSheet';
 import { CharPickerSheet } from './ui/sheets/CharPickerSheet';
+import { CharPickerContent } from './ui/sheets/CharPickerContent';
 import type { ShotType } from './domain/types';
 
 export function App() {
@@ -63,9 +64,14 @@ export function App() {
   }
 
   return (
-    <div className="bg-slate-700 h-dvh flex flex-col font-sans overflow-hidden">
-      <div className="max-w-md w-full mx-auto flex flex-col gap-3 px-2 pt-2 flex-1 min-h-0">
-        <div className="shrink-0">
+    <div className="bg-slate-700 h-dvh font-sans overflow-hidden flex flex-col gap-3 lg:flex-row lg:gap-0 lg:justify-center">
+
+      {/* コートカラム: モバイル=全幅, デスクトップ=高さから幅を逆算 */}
+      <div
+        className="shrink-0 px-2 pt-2 lg:p-0 lg:overflow-hidden"
+        style={{ ['--court-w' as string]: 'calc(60dvh - 27px)' }}
+      >
+        <div className="w-full lg:w-[calc(60dvh-27px)]">
           <Court
             dispatch={dispatch}
             containerRef={containerRef}
@@ -93,22 +99,35 @@ export function App() {
             <SubtitleBar state={state} dispatch={dispatch} />
           </Court>
         </div>
+      </div>
 
-        <div className="flex-1 min-h-0 overflow-y-auto pb-4">
-          <EditPanel
-            state={state}
-            dispatch={dispatch}
-            onSetDownloading={setIsDownloading}
-            onShotButtonClick={() => {
-              if (state.selectedSceneId === null && state.scenes.length > 0) {
-                dispatch({ type: 'SELECT_SHOT', id: state.scenes[state.scenes.length - 1].id });
-              }
-              setShotTypeSheetOpen(true);
-            }}
-            onCharClick={() => { setSelectingPlayer('p1'); setCharSheetOpen(true); }}
-            containerRef={containerRef}
+      {/* コントロールカラム */}
+      <div className="flex-1 min-h-0 overflow-y-auto px-2 pb-4 flex flex-col gap-3 lg:flex-none lg:w-80 lg:px-3 lg:py-3">
+
+        {/* キャラ選択: デスクトップのみ常時表示 */}
+        <div className="hidden lg:block bg-slate-800 rounded-2xl px-3 py-3 shadow-lg">
+          <CharPickerContent
+            selectingPlayer={selectingPlayer}
+            p1CharName={state.p1CharName}
+            p2CharName={state.p2CharName}
+            onSelectPlayer={player => setSelectingPlayer(player)}
+            onPickChar={handlePickChar}
           />
         </div>
+
+        <EditPanel
+          state={state}
+          dispatch={dispatch}
+          onSetDownloading={setIsDownloading}
+          onShotButtonClick={() => {
+            if (state.selectedSceneId === null && state.scenes.length > 0) {
+              dispatch({ type: 'SELECT_SHOT', id: state.scenes[state.scenes.length - 1].id });
+            }
+            setShotTypeSheetOpen(true);
+          }}
+          onCharClick={() => { setSelectingPlayer('p1'); setCharSheetOpen(true); }}
+          containerRef={containerRef}
+        />
       </div>
 
       <ShotTypeSheet
@@ -118,15 +137,18 @@ export function App() {
         onSelect={handleShotTypeSelect}
       />
 
-      <CharPickerSheet
-        open={charSheetOpen}
-        selectingPlayer={selectingPlayer}
-        p1CharName={state.p1CharName}
-        p2CharName={state.p2CharName}
-        onClose={() => setCharSheetOpen(false)}
-        onSelectPlayer={player => setSelectingPlayer(player)}
-        onPickChar={handlePickChar}
-      />
+      {/* キャラシート: モバイルのみ */}
+      <div className="lg:hidden">
+        <CharPickerSheet
+          open={charSheetOpen}
+          selectingPlayer={selectingPlayer}
+          p1CharName={state.p1CharName}
+          p2CharName={state.p2CharName}
+          onClose={() => setCharSheetOpen(false)}
+          onSelectPlayer={player => setSelectingPlayer(player)}
+          onPickChar={handlePickChar}
+        />
+      </div>
     </div>
   );
 }

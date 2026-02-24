@@ -74,7 +74,7 @@ export function EditPanel({ state, dispatch, onShotButtonClick, onCharClick, con
             球種
           </button>
           <button
-            className={`flex-1 ${btnSlate}`}
+            className={`flex-1 lg:hidden ${btnSlate}`}
             onClick={onCharClick}
           >
             キャラ
