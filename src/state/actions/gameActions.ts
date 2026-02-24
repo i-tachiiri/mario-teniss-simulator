@@ -18,4 +18,7 @@ export type GameAction =
   | { type: 'UNDO_LAST' }
   | { type: 'RESET_ALL' }
   | { type: 'RESET_CURRENT_SCENE' }
-  | { type: 'SET_STAR_POS'; id: number; pos: PixelPos | null };
+  | { type: 'SET_STAR_POS'; id: number; pos: PixelPos | null }
+  | { type: 'ADD_SHOT' }
+  | { type: 'DELETE_SHOT' }
+  | { type: 'SELECT_SHOT_IN_SCENE'; shotId: number };

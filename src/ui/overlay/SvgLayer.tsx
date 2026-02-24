@@ -15,49 +15,35 @@ interface Props {
   draggingTo: { x: number; y: number } | null;
   containerRef: RefObject<HTMLDivElement | null>;
   onShotMarkerClick: () => void;
+  dimNonSelected?: boolean;
 }
 
-export function SvgLayer({ state, dispatch, draggingTo, containerRef, onShotMarkerClick }: Props) {
+const DIM_OPACITY = 0.35;
+
+export function SvgLayer({ state, dispatch, draggingTo, containerRef, onShotMarkerClick, dimNonSelected = true }: Props) {
   const isEditing = state.shotPhase.status === 'editing';
 
-  const selectedShot =
-    state.selectedShotId != null ? (state.rallySteps.find(s => s.id === state.selectedShotId) ?? null) : null;
-  const lastShot = state.rallySteps.length > 0 ? state.rallySteps[state.rallySteps.length - 1] : null;
-  const shotToShow = selectedShot ?? lastShot;
+  const selectedScene =
+    state.selectedSceneId != null ? (state.scenes.find(s => s.id === state.selectedSceneId) ?? null) : null;
+  const lastScene = state.scenes.length > 0 ? state.scenes[state.scenes.length - 1] : null;
+  const sceneToShow = selectedScene ?? lastScene;
 
   const size = containerRef.current
     ? { width: containerRef.current.clientWidth, height: containerRef.current.clientHeight }
     : undefined;
 
-  // 編集中: ドラッグ中は draggingTo、それ以外は保存済み returnAt を使ったビジュアル
-  const editVisual =
-    isEditing && shotToShow
-      ? computeSceneVisual({
-          hitFrom: shotToShow.hitFrom,
-          bounce1: { x: shotToShow.bounceAt.x, y: shotToShow.bounceAt.y },
-          returnAt: draggingTo ?? shotToShow.returnAt,
-          type: state.selectedShotType,
-          bendLevel: shotToShow.curveLevel,
-          baseCurve: SHOT_CONFIGS[state.selectedShotType].curveAmount,
-          containerSize: size,
-        })
-      : null;
+  // 全ショット（hiddenでないもの）
+  const allShots = sceneToShow?.shots.filter(sh => !sh.hidden) ?? [];
 
-  // 非編集時（閲覧のみ）のビジュアル
-  const finalVisual =
-    !isEditing && shotToShow
-      ? computeSceneVisual({
-          hitFrom: shotToShow.hitFrom,
-          bounce1: { x: shotToShow.bounceAt.x, y: shotToShow.bounceAt.y },
-          returnAt: shotToShow.returnAt,
-          type: shotToShow.type,
-          bendLevel: shotToShow.curveLevel,
-          baseCurve: SHOT_CONFIGS[shotToShow.type].curveAmount,
-          containerSize: size,
-        })
-      : null;
+  // 選択中ショット
+  const selectedShot = allShots.find(sh => sh.id === state.selectedShotId) ?? allShots[allShots.length - 1];
 
-  const activeVisual = editVisual ?? finalVisual;
+  // 複数ショットのとき番号を表示
+  const showNumbers = allShots.length > 1;
+
+  const receiverPos = selectedShot
+    ? (selectedShot.bounceAt.r >= 5 ? sceneToShow!.p1Pos : sceneToShow!.p2Pos)
+    : null;
 
   return (
     <>
@@ -71,62 +57,117 @@ export function SvgLayer({ state, dispatch, draggingTo, containerRef, onShotMark
           </filter>
         </defs>
 
-        {/* 非編集: 確定済みパス */}
-        {!isEditing && shotToShow && finalVisual && (
-          <ShotPath type={shotToShow.type} pathD={finalVisual.d} />
-        )}
+        {/* 非選択ショットのパス（全ショット分、確定表示） */}
+        {allShots.map(sh => {
+          const isSelected = sh.id === selectedShot?.id;
+          const shotType = isEditing && isSelected ? state.selectedShotType : sh.type;
+          const visual = computeSceneVisual({
+            hitFrom: sh.hitFrom,
+            bounce1: { x: sh.bounceAt.x, y: sh.bounceAt.y },
+            returnAt: isEditing && isSelected ? (draggingTo ?? sh.returnAt) : sh.returnAt,
+            type: shotType,
+            bendLevel: sh.curveLevel,
+            baseCurve: SHOT_CONFIGS[shotType].curveAmount,
+            containerSize: size,
+          });
+          if (!visual) return null;
+          return (
+            <ShotPath
+              key={sh.id}
+              type={shotType}
+              pathD={visual.d}
+              opacity={isSelected ? 1 : (dimNonSelected ? DIM_OPACITY : 1)}
+            />
+          );
+        })}
 
-        {/* 編集中: ライブプレビューパス（ドラッグ位置 or 保存済み returnAt） */}
-        {isEditing && shotToShow && (
+        {/* 選択中ショットのプレビューパス（editing時） */}
+        {isEditing && selectedShot && (
           <ShotPreviewPath
-            hitFrom={shotToShow.hitFrom}
-            bounceAt={{ x: shotToShow.bounceAt.x, y: shotToShow.bounceAt.y }}
+            hitFrom={selectedShot.hitFrom}
+            bounceAt={{ x: selectedShot.bounceAt.x, y: selectedShot.bounceAt.y }}
             type={state.selectedShotType}
-            dragPos={draggingTo ?? shotToShow.playerAt}
-            curveLevel={shotToShow.curveLevel}
+            dragPos={draggingTo ?? (receiverPos ?? selectedShot.returnAt)}
+            curveLevel={selectedShot.curveLevel}
             containerSize={size}
           />
         )}
 
-        {shotToShow && (
-          <ForeBackLabel x={shotToShow.returnAt.x} y={shotToShow.returnAt.y} shotSide={shotToShow.shotSide} />
+        {/* フォア/バックラベル（選択中ショットのみ） */}
+        {selectedShot && (
+          <ForeBackLabel x={selectedShot.returnAt.x} y={selectedShot.returnAt.y} shotSide={selectedShot.shotSide} />
         )}
+
+        {/* ショット番号ラベル */}
+        {showNumbers && allShots.map((sh, idx) => {
+          const isSelected = sh.id === selectedShot?.id;
+          return (
+            <g key={`label-${sh.id}`} opacity={isSelected ? 1 : (dimNonSelected ? DIM_OPACITY + 0.15 : 1)}>
+              <circle cx={sh.bounceAt.x} cy={sh.bounceAt.y - 18} r={9} fill={isSelected ? '#6366f1' : '#334155'} />
+              <text
+                x={sh.bounceAt.x}
+                y={sh.bounceAt.y - 18}
+                textAnchor="middle"
+                dominantBaseline="central"
+                fill="white"
+                fontSize="10"
+                fontWeight="bold"
+              >
+                {idx + 1}
+              </text>
+            </g>
+          );
+        })}
       </svg>
 
-      {shotToShow && (
-        <>
-          <ShotMarker
-            x={shotToShow.hitFrom.x}
-            y={shotToShow.hitFrom.y}
-            color={SHOT_CONFIGS[isEditing ? state.selectedShotType : shotToShow.type].color}
-            clickable
-            onClick={e => {
-              e.stopPropagation();
-              onShotMarkerClick();
-            }}
-          />
-          <ShotMarker
-            x={shotToShow.bounceAt.x}
-            y={shotToShow.bounceAt.y}
-            color="#ef4444"
-            clickable
-            onClick={e => {
-              e.stopPropagation();
-              onShotMarkerClick();
-            }}
-          />
-          {activeVisual?.markers.slice(1).map((marker, idx) => (
-            <ShotMarker key={`extra-bounce-${idx}`} x={marker.x} y={marker.y} color="#ef4444" />
-          ))}
-          {shotToShow.starPos && (
-            <StarMarker
-              x={shotToShow.starPos.x}
-              y={shotToShow.starPos.y}
-              containerRef={containerRef}
-              onDrop={(x, y) => dispatch({ type: 'SET_STAR_POS', id: shotToShow.id, pos: { x, y } })}
+      {/* DOM層マーカー（選択中ショットのみ clickable） */}
+      {allShots.map(sh => {
+        const isSelected = sh.id === selectedShot?.id;
+        const shotType = isEditing && isSelected ? state.selectedShotType : sh.type;
+        const markerOpacity = isSelected ? undefined : (dimNonSelected ? DIM_OPACITY : undefined);
+
+        const visual = computeSceneVisual({
+          hitFrom: sh.hitFrom,
+          bounce1: { x: sh.bounceAt.x, y: sh.bounceAt.y },
+          returnAt: sh.returnAt,
+          type: shotType,
+          bendLevel: sh.curveLevel,
+          baseCurve: SHOT_CONFIGS[shotType].curveAmount,
+          containerSize: size,
+        });
+
+        return (
+          <span key={`markers-${sh.id}`}>
+            <ShotMarker
+              x={sh.hitFrom.x}
+              y={sh.hitFrom.y}
+              color={SHOT_CONFIGS[shotType].color}
+              clickable={isSelected}
+              opacity={markerOpacity}
+              onClick={isSelected ? e => { e.stopPropagation(); onShotMarkerClick(); } : undefined}
             />
-          )}
-        </>
+            <ShotMarker
+              x={sh.bounceAt.x}
+              y={sh.bounceAt.y}
+              color="#ef4444"
+              clickable={isSelected}
+              opacity={markerOpacity}
+              onClick={isSelected ? e => { e.stopPropagation(); onShotMarkerClick(); } : undefined}
+            />
+            {isSelected && visual?.markers.slice(1).map((marker, idx) => (
+              <ShotMarker key={`extra-bounce-${idx}`} x={marker.x} y={marker.y} color="#ef4444" />
+            ))}
+          </span>
+        );
+      })}
+
+      {sceneToShow?.starPos && (
+        <StarMarker
+          x={sceneToShow.starPos.x}
+          y={sceneToShow.starPos.y}
+          containerRef={containerRef}
+          onDrop={(x, y) => dispatch({ type: 'SET_STAR_POS', id: sceneToShow.id, pos: { x, y } })}
+        />
       )}
     </>
   );

@@ -4,13 +4,14 @@ import { SHOT_CONFIGS } from '../../config';
 interface Props {
   type: ShotType;
   pathD: string;
+  opacity?: number;
 }
 
-export function ShotPath({ type, pathD }: Props) {
+export function ShotPath({ type, pathD, opacity = 1 }: Props) {
   const config = SHOT_CONFIGS[type];
 
   return (
-    <>
+    <g opacity={opacity}>
       {/* 白ボーダー（背面） */}
       <path
         d={pathD}
@@ -32,6 +33,6 @@ export function ShotPath({ type, pathD }: Props) {
         strokeDasharray={config.dashed ? '8,5' : undefined}
         filter="url(#shadow)"
       />
-    </>
+    </g>
   );
 }

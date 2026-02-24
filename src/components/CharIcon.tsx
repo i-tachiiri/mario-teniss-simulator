@@ -1,4 +1,4 @@
-import { useEffect, forwardRef } from 'react';
+import { useLayoutEffect, forwardRef } from 'react';
 import { charImgPath } from '../characters';
 import { ICON_HALF_SIZE } from '../config';
 
@@ -27,7 +27,7 @@ export const CharIcon = forwardRef<HTMLDivElement, Props>(function CharIcon(
   { charName, alt, pos },
   ref,
 ) {
-  useEffect(() => {
+  useLayoutEffect(() => {
     const el = (ref as React.RefObject<HTMLDivElement | null>)?.current;
     if (!el) return;
     if (pos) {
