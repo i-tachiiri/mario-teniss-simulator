@@ -12,7 +12,7 @@ import { CharPickerContent } from './ui/sheets/CharPickerContent';
 import type { ShotType } from './domain/types';
 
 export function App() {
-  const { state, dispatch, isAwaitingReturn, canReposition } = useGameState();
+  const { state, dispatch, isAwaitingReturn, canReposition, p1IconPos, p2IconPos, activeShotType } = useGameState();
 
   const containerRef = useRef<HTMLDivElement | null>(null);
   const p1Ref = useRef<HTMLDivElement | null>(null);
@@ -74,18 +74,19 @@ export function App() {
               containerRef={containerRef}
               onShotMarkerClick={() => setShotTypeSheetOpen(true)}
               dimNonSelected={!isDownloading}
+              activeShotType={activeShotType}
             />
             <CharIcon
               ref={p1Ref}
               charName={state.p1CharName}
               alt="P1"
-              pos={state.p1IconPos}
+              pos={p1IconPos}
             />
             <CharIcon
               ref={p2Ref}
               charName={state.p2CharName}
               alt="P2"
-              pos={state.p2IconPos}
+              pos={p2IconPos}
             />
             <SubtitleBar state={state} dispatch={dispatch} />
           </Court>
@@ -125,7 +126,7 @@ export function App() {
 
       <ShotTypeSheet
         open={shotSheetVisible}
-        selectedType={state.selectedShotType}
+        selectedType={activeShotType}
         onClose={handleCloseShotSheet}
         onSelect={handleShotTypeSelect}
       />
