@@ -20,7 +20,6 @@ export interface Shot {
   returnAt: PixelPos;
   type: ShotType;
   curveLevel: number;
-  shotSide: 'forehand' | 'backhand';
 }
 
 /** 1シーン分の状態（プレイヤー配置 + ショット軌跡） */

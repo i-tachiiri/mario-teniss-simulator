@@ -1,10 +1,10 @@
-import type { PixelPos, Position, Scene } from '../../domain/types';
+import type { PixelPos, Scene } from '../../domain/types';
 
 export function getHitFrom(
   scenes: Scene[],
   activeSide: 'top' | 'bottom',
-  p1Pos: Position | null,
-  p2Pos: Position | null,
+  p1Pos: PixelPos | null,
+  p2Pos: PixelPos | null,
 ): PixelPos {
   const findInBottom = activeSide === 'top';
 

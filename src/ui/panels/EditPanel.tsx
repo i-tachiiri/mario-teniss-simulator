@@ -162,7 +162,11 @@ export function EditPanel({ state, dispatch, onShotButtonClick, onCharClick, con
             onClick={e => {
               e.stopPropagation();
               if (currentScene && selectedShot && !selectedShot.hidden) {
-                dispatch({ type: 'SET_STAR_POS', id: currentScene.id, pos: hasStar ? null : selectedShot.bounceAt });
+                const container = containerRef.current;
+                const centerPos = container
+                  ? { x: container.offsetWidth / 2, y: container.offsetHeight / 2 }
+                  : selectedShot.bounceAt;
+                dispatch({ type: 'SET_STAR_POS', id: currentScene.id, pos: hasStar ? null : centerPos });
               }
             }}
           >

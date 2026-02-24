@@ -1,19 +1,11 @@
 import type { PixelPos } from '../../domain/types';
 import { projectToRayFromBounce } from '../math/projection';
 
-export function computeReturnAndSide(
+export function computeReturnAt(
   hitFrom: PixelPos,
   bounceAt: PixelPos,
   iconX: number,
   iconY: number,
-  activeSide: 'top' | 'bottom',
-): { returnAt: PixelPos; shotSide: 'forehand' | 'backhand' } {
-  const returnAt = projectToRayFromBounce(hitFrom, bounceAt, iconX, iconY);
-
-  const shotSide: 'forehand' | 'backhand' =
-    activeSide === 'bottom'
-      ? returnAt.x >= iconX ? 'forehand' : 'backhand'
-      : returnAt.x <= iconX ? 'forehand' : 'backhand';
-
-  return { returnAt, shotSide };
+): PixelPos {
+  return projectToRayFromBounce(hitFrom, bounceAt, iconX, iconY);
 }

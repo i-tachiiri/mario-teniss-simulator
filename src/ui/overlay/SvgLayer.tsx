@@ -1,11 +1,11 @@
 import type { RefObject } from 'react';
 import type { GameStateData } from '../../state/reducers/gameReducer';
 import type { GameAction } from '../../state/actions/gameActions';
+import type { ShotType } from '../../domain/types';
 import { SHOT_CONFIGS } from '../../config';
 import { ShotPath } from './ShotPath';
 import { ShotPreviewPath } from './ShotPreviewPath';
 import { ShotMarker } from './ShotMarker';
-import { ForeBackLabel } from './ForeBackLabel';
 import { StarMarker } from './StarMarker';
 import { computeSceneVisual } from '../../geometry/shot/computeShotPathD';
 
@@ -16,11 +16,12 @@ interface Props {
   containerRef: RefObject<HTMLDivElement | null>;
   onShotMarkerClick: () => void;
   dimNonSelected?: boolean;
+  activeShotType: ShotType;
 }
 
 const DIM_OPACITY = 0.35;
 
-export function SvgLayer({ state, dispatch, draggingTo, containerRef, onShotMarkerClick, dimNonSelected = true }: Props) {
+export function SvgLayer({ state, dispatch, draggingTo, containerRef, onShotMarkerClick, dimNonSelected = true, activeShotType }: Props) {
   const isEditing = state.shotPhase.status === 'editing';
 
   const selectedScene =
@@ -60,7 +61,7 @@ export function SvgLayer({ state, dispatch, draggingTo, containerRef, onShotMark
         {/* 非選択ショットのパス（全ショット分、確定表示） */}
         {allShots.map(sh => {
           const isSelected = sh.id === selectedShot?.id;
-          const shotType = isEditing && isSelected ? state.selectedShotType : sh.type;
+          const shotType = isEditing && isSelected ? activeShotType : sh.type;
           const visual = computeSceneVisual({
             hitFrom: sh.hitFrom,
             bounce1: { x: sh.bounceAt.x, y: sh.bounceAt.y },
@@ -86,7 +87,7 @@ export function SvgLayer({ state, dispatch, draggingTo, containerRef, onShotMark
           <ShotPreviewPath
             hitFrom={selectedShot.hitFrom}
             bounceAt={{ x: selectedShot.bounceAt.x, y: selectedShot.bounceAt.y }}
-            type={state.selectedShotType}
+            type={activeShotType}
             dragPos={draggingTo ?? (receiverPos ?? selectedShot.returnAt)}
             curveLevel={selectedShot.curveLevel}
             containerSize={size}
@@ -94,9 +95,6 @@ export function SvgLayer({ state, dispatch, draggingTo, containerRef, onShotMark
         )}
 
         {/* フォア/バックラベル（選択中ショットのみ） */}
-        {selectedShot && (
-          <ForeBackLabel x={selectedShot.returnAt.x} y={selectedShot.returnAt.y} shotSide={selectedShot.shotSide} />
-        )}
 
         {/* ショット番号ラベル */}
         {showNumbers && allShots.map((sh, idx) => {
@@ -123,7 +121,7 @@ export function SvgLayer({ state, dispatch, draggingTo, containerRef, onShotMark
       {/* DOM層マーカー（選択中ショットのみ clickable） */}
       {allShots.map(sh => {
         const isSelected = sh.id === selectedShot?.id;
-        const shotType = isEditing && isSelected ? state.selectedShotType : sh.type;
+        const shotType = isEditing && isSelected ? activeShotType : sh.type;
         const markerOpacity = isSelected ? undefined : (dimNonSelected ? DIM_OPACITY : undefined);
 
         const visual = computeSceneVisual({
