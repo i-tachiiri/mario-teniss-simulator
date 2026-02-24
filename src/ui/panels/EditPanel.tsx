@@ -44,9 +44,9 @@ export function EditPanel({ state, dispatch, onShotButtonClick, onCharClick, con
   }
 
   const currentShot =
-    state.selectedShotId != null
-      ? state.rallySteps.find(s => s.id === state.selectedShotId)
-      : state.rallySteps[state.rallySteps.length - 1];
+    state.selectedSceneId != null
+      ? state.scenes.find(s => s.id === state.selectedSceneId)
+      : state.scenes[state.scenes.length - 1];
   const hasStar = !!currentShot?.starPos;
   const starDisabled = !currentShot;
 
@@ -88,7 +88,7 @@ export function EditPanel({ state, dispatch, onShotButtonClick, onCharClick, con
             onClick={e => {
               e.stopPropagation();
               if (currentShot) {
-                dispatch({ type: 'SET_STAR_POS', id: currentShot.id, pos: hasStar ? null : currentShot.bounceAt });
+                dispatch({ type: 'SET_STAR_POS', id: currentShot.id, pos: hasStar ? null : currentShot.shot.bounceAt });
               }
             }}
           >

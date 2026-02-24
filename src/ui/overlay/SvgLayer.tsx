@@ -20,44 +20,49 @@ interface Props {
 export function SvgLayer({ state, dispatch, draggingTo, containerRef, onShotMarkerClick }: Props) {
   const isEditing = state.shotPhase.status === 'editing';
 
-  const selectedShot =
-    state.selectedShotId != null ? (state.rallySteps.find(s => s.id === state.selectedShotId) ?? null) : null;
-  const lastShot = state.rallySteps.length > 0 ? state.rallySteps[state.rallySteps.length - 1] : null;
-  const shotToShow = selectedShot ?? lastShot;
+  const selectedScene =
+    state.selectedSceneId != null ? (state.scenes.find(s => s.id === state.selectedSceneId) ?? null) : null;
+  const lastScene = state.scenes.length > 0 ? state.scenes[state.scenes.length - 1] : null;
+  const sceneToShow = selectedScene ?? lastScene;
 
   const size = containerRef.current
     ? { width: containerRef.current.clientWidth, height: containerRef.current.clientHeight }
     : undefined;
 
-  // 編集中: ドラッグ中は draggingTo、それ以外は保存済み returnAt を使ったビジュアル
+  const shot = sceneToShow?.shot;
+
   const editVisual =
-    isEditing && shotToShow
+    isEditing && sceneToShow && shot
       ? computeSceneVisual({
-          hitFrom: shotToShow.hitFrom,
-          bounce1: { x: shotToShow.bounceAt.x, y: shotToShow.bounceAt.y },
-          returnAt: draggingTo ?? shotToShow.returnAt,
+          hitFrom: shot.hitFrom,
+          bounce1: { x: shot.bounceAt.x, y: shot.bounceAt.y },
+          returnAt: draggingTo ?? shot.returnAt,
           type: state.selectedShotType,
-          bendLevel: shotToShow.curveLevel,
+          bendLevel: shot.curveLevel,
           baseCurve: SHOT_CONFIGS[state.selectedShotType].curveAmount,
           containerSize: size,
         })
       : null;
 
-  // 非編集時（閲覧のみ）のビジュアル
   const finalVisual =
-    !isEditing && shotToShow
+    !isEditing && sceneToShow && shot
       ? computeSceneVisual({
-          hitFrom: shotToShow.hitFrom,
-          bounce1: { x: shotToShow.bounceAt.x, y: shotToShow.bounceAt.y },
-          returnAt: shotToShow.returnAt,
-          type: shotToShow.type,
-          bendLevel: shotToShow.curveLevel,
-          baseCurve: SHOT_CONFIGS[shotToShow.type].curveAmount,
+          hitFrom: shot.hitFrom,
+          bounce1: { x: shot.bounceAt.x, y: shot.bounceAt.y },
+          returnAt: shot.returnAt,
+          type: shot.type,
+          bendLevel: shot.curveLevel,
+          baseCurve: SHOT_CONFIGS[shot.type].curveAmount,
           containerSize: size,
         })
       : null;
 
   const activeVisual = editVisual ?? finalVisual;
+
+  // レシーバー位置: bounceAt が下コートなら P1 がレシーバー
+  const receiverPos = sceneToShow
+    ? (sceneToShow.shot.bounceAt.r >= 5 ? sceneToShow.p1Pos : sceneToShow.p2Pos)
+    : null;
 
   return (
     <>
@@ -71,34 +76,32 @@ export function SvgLayer({ state, dispatch, draggingTo, containerRef, onShotMark
           </filter>
         </defs>
 
-        {/* 非編集: 確定済みパス */}
-        {!isEditing && shotToShow && finalVisual && (
-          <ShotPath type={shotToShow.type} pathD={finalVisual.d} />
+        {!isEditing && sceneToShow && shot && finalVisual && (
+          <ShotPath type={shot.type} pathD={finalVisual.d} />
         )}
 
-        {/* 編集中: ライブプレビューパス（ドラッグ位置 or 保存済み returnAt） */}
-        {isEditing && shotToShow && (
+        {isEditing && sceneToShow && shot && (
           <ShotPreviewPath
-            hitFrom={shotToShow.hitFrom}
-            bounceAt={{ x: shotToShow.bounceAt.x, y: shotToShow.bounceAt.y }}
+            hitFrom={shot.hitFrom}
+            bounceAt={{ x: shot.bounceAt.x, y: shot.bounceAt.y }}
             type={state.selectedShotType}
-            dragPos={draggingTo ?? shotToShow.playerAt}
-            curveLevel={shotToShow.curveLevel}
+            dragPos={draggingTo ?? (receiverPos ?? shot.returnAt)}
+            curveLevel={shot.curveLevel}
             containerSize={size}
           />
         )}
 
-        {shotToShow && (
-          <ForeBackLabel x={shotToShow.returnAt.x} y={shotToShow.returnAt.y} shotSide={shotToShow.shotSide} />
+        {sceneToShow && shot && (
+          <ForeBackLabel x={shot.returnAt.x} y={shot.returnAt.y} shotSide={shot.shotSide} />
         )}
       </svg>
 
-      {shotToShow && (
+      {sceneToShow && shot && (
         <>
           <ShotMarker
-            x={shotToShow.hitFrom.x}
-            y={shotToShow.hitFrom.y}
-            color={SHOT_CONFIGS[isEditing ? state.selectedShotType : shotToShow.type].color}
+            x={shot.hitFrom.x}
+            y={shot.hitFrom.y}
+            color={SHOT_CONFIGS[isEditing ? state.selectedShotType : shot.type].color}
             clickable
             onClick={e => {
               e.stopPropagation();
@@ -106,8 +109,8 @@ export function SvgLayer({ state, dispatch, draggingTo, containerRef, onShotMark
             }}
           />
           <ShotMarker
-            x={shotToShow.bounceAt.x}
-            y={shotToShow.bounceAt.y}
+            x={shot.bounceAt.x}
+            y={shot.bounceAt.y}
             color="#ef4444"
             clickable
             onClick={e => {
@@ -118,12 +121,12 @@ export function SvgLayer({ state, dispatch, draggingTo, containerRef, onShotMark
           {activeVisual?.markers.slice(1).map((marker, idx) => (
             <ShotMarker key={`extra-bounce-${idx}`} x={marker.x} y={marker.y} color="#ef4444" />
           ))}
-          {shotToShow.starPos && (
+          {sceneToShow.starPos && (
             <StarMarker
-              x={shotToShow.starPos.x}
-              y={shotToShow.starPos.y}
+              x={sceneToShow.starPos.x}
+              y={sceneToShow.starPos.y}
               containerRef={containerRef}
-              onDrop={(x, y) => dispatch({ type: 'SET_STAR_POS', id: shotToShow.id, pos: { x, y } })}
+              onDrop={(x, y) => dispatch({ type: 'SET_STAR_POS', id: sceneToShow.id, pos: { x, y } })}
             />
           )}
         </>

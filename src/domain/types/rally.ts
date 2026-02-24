@@ -11,18 +11,24 @@ export type ShotType =
   | 'lob'
   | 'jump';
 
-export interface ShotStep {
+/** ボールの軌跡データ */
+export interface Shot {
   hitFrom: PixelPos;
   bounceAt: Position;
   returnAt: PixelPos;
-  playerAt: PixelPos;
-  shotSide: 'forehand' | 'backhand';
   type: ShotType;
-  id: number;
-  ballPathD?: string;
-  starPos?: PixelPos;
   curveLevel: number;
+  shotSide: 'forehand' | 'backhand';
+}
+
+/** 1シーン分の状態（プレイヤー配置 + ショット軌跡） */
+export interface Scene {
+  id: number;
+  p1Pos: PixelPos;
+  p2Pos: PixelPos;
   subtitle: string;
+  starPos?: PixelPos;
+  shot: Shot;
 }
 
 export type ShotPhase =

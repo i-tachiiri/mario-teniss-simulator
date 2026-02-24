@@ -1,4 +1,4 @@
-import type { PixelPos, ShotStep } from '../../domain/types';
+import type { PixelPos, ShotType } from '../../domain/types';
 import { normalize } from '../math/vector';
 import { pointsToPathD } from '../path/pointsToPathD';
 import { buildShotPoints } from './buildShotPoints';
@@ -100,7 +100,7 @@ export function computeSceneVisual(params: {
   hitFrom: PixelPos;
   bounce1: PixelPos;
   returnAt: PixelPos;
-  type: ShotStep['type'];
+  type: ShotType;
   bendLevel: number;
   baseCurve: number;
   containerSize?: { width: number; height: number };

@@ -21,7 +21,7 @@ export function App() {
   const [charSheetOpen, setCharSheetOpen] = useState(false);
   const [selectingPlayer, setSelectingPlayer] = useState<'p1' | 'p2'>('p1');
 
-  const lastShot = state.rallySteps[state.rallySteps.length - 1];
+  const lastShot = state.scenes[state.scenes.length - 1];
 
   const { receiverDragPos } = useIconDrag({
     containerRef,
@@ -30,7 +30,7 @@ export function App() {
     isAwaitingReturn,
     canReposition,
     activeSide: state.activeSide,
-    lastBounceInBottom: lastShot !== undefined && lastShot.bounceAt.r >= 5,
+    lastBounceInBottom: lastShot !== undefined && lastShot.shot.bounceAt.r >= 5,
     dispatch,
     onP1Click: () => { setSelectingPlayer('p1'); setCharSheetOpen(true); },
     onP2Click: () => { setSelectingPlayer('p2'); setCharSheetOpen(true); },
@@ -41,14 +41,14 @@ export function App() {
   function handleShotTypeSelect(type: ShotType) {
     setShotTypeSheetOpen(false);
     dispatch({ type: 'SET_SHOT_TYPE', shotType: type });
-    if (state.selectedShotId !== null) {
+    if (state.selectedSceneId !== null) {
       dispatch({ type: 'SELECT_SHOT', id: null });
     }
   }
 
   function handleCloseShotSheet() {
     setShotTypeSheetOpen(false);
-    if (state.selectedShotId !== null) {
+    if (state.selectedSceneId !== null) {
       dispatch({ type: 'SELECT_SHOT', id: null });
     }
   }
@@ -93,8 +93,8 @@ export function App() {
           state={state}
           dispatch={dispatch}
           onShotButtonClick={() => {
-            if (state.selectedShotId === null && state.rallySteps.length > 0) {
-              dispatch({ type: 'SELECT_SHOT', id: state.rallySteps[state.rallySteps.length - 1].id });
+            if (state.selectedSceneId === null && state.scenes.length > 0) {
+              dispatch({ type: 'SELECT_SHOT', id: state.scenes[state.scenes.length - 1].id });
             }
             setShotTypeSheetOpen(true);
           }}

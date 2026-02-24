@@ -11,16 +11,16 @@ export function ShotSelector({ state, dispatch }: Props) {
   const [reorderMode, setReorderMode] = useState(false);
   const timerRef = useRef<number | null>(null);
 
-  if (state.rallySteps.length === 0) return null;
+  if (state.scenes.length === 0) return null;
 
-  const selectedId = state.selectedShotId ?? state.rallySteps[state.rallySteps.length - 1]?.id ?? null;
+  const selectedId = state.selectedSceneId ?? state.scenes[state.scenes.length - 1]?.id ?? null;
 
   return (
     <div className="bg-slate-800 rounded-2xl px-3 py-2.5 shadow-lg flex gap-2 items-center flex-wrap">
       <span className="text-[9px] text-slate-500 font-bold tracking-widest uppercase">Scene</span>
 
-      {state.rallySteps.map((shot, idx) => {
-        const active = shot.id === state.selectedShotId;
+      {state.scenes.map((shot, idx) => {
+        const active = shot.id === state.selectedSceneId;
         return (
           <button
             key={shot.id}

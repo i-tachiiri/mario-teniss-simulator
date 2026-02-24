@@ -8,8 +8,8 @@ interface Props {
 
 export function SubtitleBar({ state, dispatch }: Props) {
   const currentEditId =
-    state.selectedShotId ??
-    (state.rallySteps.length > 0 ? state.rallySteps[state.rallySteps.length - 1].id : null);
+    state.selectedSceneId ??
+    (state.scenes.length > 0 ? state.scenes[state.scenes.length - 1].id : null);
 
   function handleChange(e: React.ChangeEvent<HTMLTextAreaElement>) {
     const text = e.target.value;
