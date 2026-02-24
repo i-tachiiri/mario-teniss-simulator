@@ -80,7 +80,7 @@ export function CharPickerContent({
 
       {/* キャラクターグリッド */}
       <div
-        className="grid gap-1.5 max-h-48 overflow-y-auto"
+        className="grid gap-1.5 max-h-48 overflow-y-auto lg:max-h-none"
         style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(36px, 1fr))' }}
       >
         {CHARACTERS.map(name => {
