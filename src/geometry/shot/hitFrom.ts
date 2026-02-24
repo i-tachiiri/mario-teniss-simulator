@@ -9,10 +9,13 @@ export function getHitFrom(
   const findInBottom = activeSide === 'top';
 
   for (let i = scenes.length - 1; i >= 0; i--) {
-    const shot = scenes[i].shot;
-    const bouncedInBottom = shot.bounceAt.r >= 5;
-    if (findInBottom && bouncedInBottom) return shot.returnAt;
-    if (!findInBottom && !bouncedInBottom) return shot.returnAt;
+    const scene = scenes[i];
+    for (let j = scene.shots.length - 1; j >= 0; j--) {
+      const shot = scene.shots[j];
+      const bouncedInBottom = shot.bounceAt.r >= 5;
+      if (findInBottom && bouncedInBottom) return shot.returnAt;
+      if (!findInBottom && !bouncedInBottom) return shot.returnAt;
+    }
   }
 
   const fallback = findInBottom ? p1Pos : p2Pos;

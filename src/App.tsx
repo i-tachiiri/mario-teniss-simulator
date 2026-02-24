@@ -20,8 +20,10 @@ export function App() {
   const [shotTypeSheetOpen, setShotTypeSheetOpen] = useState(false);
   const [charSheetOpen, setCharSheetOpen] = useState(false);
   const [selectingPlayer, setSelectingPlayer] = useState<'p1' | 'p2'>('p1');
+  const [isDownloading, setIsDownloading] = useState(false);
 
-  const lastShot = state.scenes[state.scenes.length - 1];
+  const lastScene = state.scenes[state.scenes.length - 1];
+  const lastShot = lastScene?.shots[lastScene.shots.length - 1];
 
   const { receiverDragPos } = useIconDrag({
     containerRef,
@@ -30,7 +32,7 @@ export function App() {
     isAwaitingReturn,
     canReposition,
     activeSide: state.activeSide,
-    lastBounceInBottom: lastShot !== undefined && lastShot.shot.bounceAt.r >= 5,
+    lastBounceInBottom: lastShot !== undefined && lastShot.bounceAt.r >= 5,
     dispatch,
     onP1Click: () => { setSelectingPlayer('p1'); setCharSheetOpen(true); },
     onP2Click: () => { setSelectingPlayer('p2'); setCharSheetOpen(true); },
@@ -73,6 +75,7 @@ export function App() {
             draggingTo={receiverDragPos}
             containerRef={containerRef}
             onShotMarkerClick={() => setShotTypeSheetOpen(true)}
+            dimNonSelected={!isDownloading}
           />
           <CharIcon
             ref={p1Ref}
@@ -92,6 +95,7 @@ export function App() {
         <EditPanel
           state={state}
           dispatch={dispatch}
+          onSetDownloading={setIsDownloading}
           onShotButtonClick={() => {
             if (state.selectedSceneId === null && state.scenes.length > 0) {
               dispatch({ type: 'SELECT_SHOT', id: state.scenes[state.scenes.length - 1].id });

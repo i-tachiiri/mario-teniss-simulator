@@ -13,6 +13,8 @@ export type ShotType =
 
 /** ボールの軌跡データ */
 export interface Shot {
+  id: number;
+  hidden?: boolean;
   hitFrom: PixelPos;
   bounceAt: Position;
   returnAt: PixelPos;
@@ -28,7 +30,7 @@ export interface Scene {
   p2Pos: PixelPos;
   subtitle: string;
   starPos?: PixelPos;
-  shot: Shot;
+  shots: Shot[];
 }
 
 export type ShotPhase =

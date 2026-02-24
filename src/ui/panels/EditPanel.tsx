@@ -1,3 +1,4 @@
+import { flushSync } from 'react-dom';
 import type { GameStateData } from '../../state/reducers/gameReducer';
 import type { GameAction } from '../../state/actions/gameActions';
 import { ShotSelector } from './ShotSelector';
@@ -9,6 +10,7 @@ interface Props {
   onShotButtonClick: () => void;
   onCharClick: () => void;
   containerRef: React.RefObject<HTMLDivElement | null>;
+  onSetDownloading?: (value: boolean) => void;
 }
 
 function IconTrash() {
@@ -22,7 +24,7 @@ function IconTrash() {
   );
 }
 
-export function EditPanel({ state, dispatch, onShotButtonClick, onCharClick, containerRef }: Props) {
+export function EditPanel({ state, dispatch, onShotButtonClick, onCharClick, containerRef, onSetDownloading }: Props) {
   async function handleDownload() {
     if (!containerRef.current) return;
     const el = containerRef.current;
@@ -31,6 +33,7 @@ export function EditPanel({ state, dispatch, onShotButtonClick, onCharClick, con
     const textarea = el.querySelector('textarea');
     const prevPlaceholder = textarea?.getAttribute('placeholder') ?? '';
     textarea?.setAttribute('placeholder', '');
+    flushSync(() => onSetDownloading?.(true));
     try {
       const dataUrl = await toPng(el, { pixelRatio: 2 });
       const link = document.createElement('a');
@@ -40,15 +43,19 @@ export function EditPanel({ state, dispatch, onShotButtonClick, onCharClick, con
     } finally {
       el.style.boxShadow = prev;
       textarea?.setAttribute('placeholder', prevPlaceholder);
+      onSetDownloading?.(false);
     }
   }
 
-  const currentShot =
+  const currentScene =
     state.selectedSceneId != null
       ? state.scenes.find(s => s.id === state.selectedSceneId)
       : state.scenes[state.scenes.length - 1];
-  const hasStar = !!currentShot?.starPos;
-  const starDisabled = !currentShot;
+  const selectedShot =
+    currentScene?.shots.find(s => s.id === state.selectedShotId) ??
+    currentScene?.shots[currentScene.shots.length - 1];
+  const hasStar = !!currentScene?.starPos;
+  const starDisabled = !selectedShot || !!selectedShot.hidden;
 
   const btn = 'h-11 rounded-xl flex items-center justify-center transition-colors duration-150 text-xs font-bold';
   const btnSlate = `${btn} bg-slate-700 hover:bg-slate-600 text-slate-200`;
@@ -87,8 +94,8 @@ export function EditPanel({ state, dispatch, onShotButtonClick, onCharClick, con
             } ${starDisabled ? 'opacity-30 pointer-events-none' : ''}`}
             onClick={e => {
               e.stopPropagation();
-              if (currentShot) {
-                dispatch({ type: 'SET_STAR_POS', id: currentShot.id, pos: hasStar ? null : currentShot.shot.bounceAt });
+              if (currentScene && selectedShot && !selectedShot.hidden) {
+                dispatch({ type: 'SET_STAR_POS', id: currentScene.id, pos: hasStar ? null : selectedShot.bounceAt });
               }
             }}
           >

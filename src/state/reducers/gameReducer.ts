@@ -16,6 +16,7 @@ export interface GameStateData {
   selectedShotType: ShotType;
   activeSide: 'top' | 'bottom';
   selectedSceneId: number | null;
+  selectedShotId: number | null;
   p1CharName: string;
   p2CharName: string;
   subtitleDraft: string;
@@ -33,6 +34,7 @@ export const initialState: GameStateData = {
   selectedShotType: 'strong-flat',
   activeSide: 'top',
   selectedSceneId: null,
+  selectedShotId: null,
   p1CharName: 'ノコノコ',
   p2CharName: 'ノコノコ',
   subtitleDraft: '',
@@ -46,6 +48,34 @@ function getEditId(state: GameStateData): number | null {
   return state.selectedSceneId ?? (state.scenes.length > 0 ? state.scenes[state.scenes.length - 1].id : null);
 }
 
+/** シーン内の選択中ショットを返す（selectedShotId → 末尾 → undefined） */
+function getSelectedShot(state: GameStateData, scene: Scene): Shot | undefined {
+  if (state.selectedShotId !== null) {
+    const found = scene.shots.find(s => s.id === state.selectedShotId);
+    if (found) return found;
+  }
+  return scene.shots[scene.shots.length - 1];
+}
+
+/** シーン内の選択中ショットIDを返す */
+function getSelectedShotId(state: GameStateData, scene: Scene): number | null {
+  const shot = getSelectedShot(state, scene);
+  return shot?.id ?? null;
+}
+
+/** selectedShotId のショットを updater で差し替える */
+function mapSelectedShot(
+  state: GameStateData,
+  scene: Scene,
+  updater: (shot: Shot) => Shot,
+): Scene {
+  const shotId = getSelectedShotId(state, scene);
+  return {
+    ...scene,
+    shots: scene.shots.map(sh => (sh.id === shotId ? updater(sh) : sh)),
+  };
+}
+
 export function gameReducer(state: GameStateData, action: GameAction): GameStateData {
   switch (action.type) {
     case 'SET_SHOT_TYPE': {
@@ -55,7 +85,9 @@ export function gameReducer(state: GameStateData, action: GameAction): GameState
           ...state,
           selectedShotType: action.shotType,
           scenes: state.scenes.map(s =>
-            s.id === editId ? { ...s, shot: { ...s.shot, type: action.shotType } } : s
+            s.id === editId
+              ? mapSelectedShot(state, s, sh => ({ ...sh, type: action.shotType }))
+              : s
           ),
         };
       }
@@ -69,7 +101,7 @@ export function gameReducer(state: GameStateData, action: GameAction): GameState
         ...state,
         scenes: state.scenes.map(s =>
           s.id === editId
-            ? { ...s, shot: { ...s.shot, curveLevel: clampCurve(s.shot.curveLevel + action.delta) } }
+            ? mapSelectedShot(state, s, sh => ({ ...sh, curveLevel: clampCurve(sh.curveLevel + action.delta) }))
             : s
         ),
       };
@@ -91,11 +123,10 @@ export function gameReducer(state: GameStateData, action: GameAction): GameState
           ...baseState,
           scenes: state.scenes.map(s => {
             if (s.id !== editId) return s;
-            return {
-              ...s,
-              [posKey]: iconPos,
-              shot: isHitter ? { ...s.shot, hitFrom: iconPos } : s.shot,
-            };
+            const updated = isHitter
+              ? mapSelectedShot(state, s, sh => ({ ...sh, hitFrom: iconPos }))
+              : s;
+            return { ...updated, [posKey]: iconPos };
           }),
         };
       }
@@ -124,12 +155,39 @@ export function gameReducer(state: GameStateData, action: GameAction): GameState
       if (editId !== null) {
         const priorScenes = state.scenes.filter(s => s.id !== editId);
         const hitFrom = getHitFrom(priorScenes, activeSide, state.p1Pos, state.p2Pos);
+
+        if (state.selectedShotId === null) {
+          const receiverIconPos = activeSide === 'top' ? state.p2IconPos : state.p1IconPos;
+          const defaultReturnAt = receiverIconPos ?? { x: bounceAt.x, y: bounceAt.y };
+          const shotId = newId();
+          const shot: Shot = {
+            id: shotId,
+            hitFrom,
+            bounceAt,
+            returnAt: defaultReturnAt,
+            shotSide: 'forehand',
+            type: state.selectedShotType,
+            curveLevel: 0,
+          };
+          return {
+            ...state,
+            activeSide,
+            shotPhase: { status: 'editing' },
+            selectedShotId: shotId,
+            scenes: state.scenes.map(s =>
+              s.id === editId ? { ...s, shots: [...s.shots, shot] } : s
+            ),
+          };
+        }
+
         return {
           ...state,
           activeSide,
           shotPhase: { status: 'editing' },
           scenes: state.scenes.map(s =>
-            s.id === editId ? { ...s, shot: { ...s.shot, bounceAt, hitFrom } } : s
+            s.id === editId
+              ? mapSelectedShot(state, s, sh => ({ ...sh, bounceAt, hitFrom, hidden: undefined }))
+              : s
           ),
         };
       }
@@ -137,8 +195,10 @@ export function gameReducer(state: GameStateData, action: GameAction): GameState
       const hitFrom = getHitFrom([], activeSide, state.p1Pos, state.p2Pos);
       const receiverIconPos = activeSide === 'top' ? state.p2IconPos : state.p1IconPos;
       const defaultReturnAt = receiverIconPos ?? { x: bounceAt.x, y: bounceAt.y };
+      const shotId = newId();
       const id = newId();
       const shot: Shot = {
+        id: shotId,
         hitFrom,
         bounceAt,
         returnAt: defaultReturnAt,
@@ -151,13 +211,14 @@ export function gameReducer(state: GameStateData, action: GameAction): GameState
         p1Pos: state.p1IconPos ?? { x: bounceAt.x, y: bounceAt.y },
         p2Pos: state.p2IconPos ?? { x: bounceAt.x, y: bounceAt.y },
         subtitle: state.subtitleDraft,
-        shot,
+        shots: [shot],
       };
       return {
         ...state,
         activeSide,
         shotPhase: { status: 'editing' },
         selectedSceneId: id,
+        selectedShotId: shotId,
         scenes: [scene],
       };
     }
@@ -168,27 +229,28 @@ export function gameReducer(state: GameStateData, action: GameAction): GameState
       const scene = state.scenes.find(s => s.id === editId);
       if (!scene) return state;
 
+      const selectedShot = getSelectedShot(state, scene);
+      if (!selectedShot) return state;
+
       const { returnAt, shotSide } = computeReturnAndSide(
-        scene.shot.hitFrom,
-        positionToPixelPos(scene.shot.bounceAt),
+        selectedShot.hitFrom,
+        positionToPixelPos(selectedShot.bounceAt),
         action.iconX,
         action.iconY,
         state.activeSide,
       );
-      const bounceInBottom = scene.shot.bounceAt.r >= 5;
+      const bounceInBottom = selectedShot.bounceAt.r >= 5;
       const receiverPos: PixelPos = { x: action.iconX, y: action.iconY };
       return {
         ...state,
-        scenes: state.scenes.map(s =>
-          s.id === editId
-            ? {
-                ...s,
-                p1Pos: bounceInBottom ? receiverPos : s.p1Pos,
-                p2Pos: !bounceInBottom ? receiverPos : s.p2Pos,
-                shot: { ...s.shot, returnAt, shotSide },
-              }
-            : s
-        ),
+        scenes: state.scenes.map(s => {
+          if (s.id !== editId) return s;
+          return {
+            ...mapSelectedShot(state, s, sh => ({ ...sh, returnAt, shotSide })),
+            p1Pos: bounceInBottom ? receiverPos : s.p1Pos,
+            p2Pos: !bounceInBottom ? receiverPos : s.p2Pos,
+          };
+        }),
         p1IconPos: bounceInBottom ? receiverPos : state.p1IconPos,
         p2IconPos: !bounceInBottom ? receiverPos : state.p2IconPos,
       };
@@ -197,12 +259,14 @@ export function gameReducer(state: GameStateData, action: GameAction): GameState
     case 'SELECT_SHOT': {
       if (action.id !== null) {
         const scene = state.scenes.find(s => s.id === action.id);
-        if (scene) {
-          const activeSide: 'top' | 'bottom' = scene.shot.bounceAt.r < 5 ? 'top' : 'bottom';
+        if (scene && scene.shots.length > 0) {
+          const firstShot = scene.shots[0];
+          const activeSide: 'top' | 'bottom' = firstShot.bounceAt.r < 5 ? 'top' : 'bottom';
           return {
             ...state,
             selectedSceneId: action.id,
-            selectedShotType: scene.shot.type,
+            selectedShotId: firstShot.id,
+            selectedShotType: firstShot.type,
             subtitleDraft: scene.subtitle,
             activeSide,
             shotPhase: { status: 'editing' },
@@ -214,23 +278,73 @@ export function gameReducer(state: GameStateData, action: GameAction): GameState
       return { ...state, selectedSceneId: action.id };
     }
 
+    case 'SELECT_SHOT_IN_SCENE': {
+      const editId = getEditId(state);
+      if (!editId) return state;
+      const scene = state.scenes.find(s => s.id === editId);
+      if (!scene) return state;
+      const shot = scene.shots.find(s => s.id === action.shotId);
+      if (!shot) return state;
+      const activeSide: 'top' | 'bottom' = shot.bounceAt.r < 5 ? 'top' : 'bottom';
+      return {
+        ...state,
+        selectedShotId: action.shotId,
+        selectedShotType: shot.type,
+        activeSide,
+        shotPhase: { status: 'editing' },
+      };
+    }
+
+    case 'ADD_SHOT': {
+      const editId = getEditId(state);
+      if (!editId) return state;
+      return {
+        ...state,
+        selectedShotId: null,
+        shotPhase: { status: 'idle' },
+      };
+    }
+
+    case 'DELETE_SHOT': {
+      const editId = getEditId(state);
+      if (!editId) return state;
+      const scene = state.scenes.find(s => s.id === editId);
+      if (!scene) return state;
+      const shotId = getSelectedShotId(state, scene);
+      const remaining = scene.shots.filter(s => s.id !== shotId);
+      const newSelected = remaining[remaining.length - 1];
+      return {
+        ...state,
+        selectedShotId: newSelected?.id ?? null,
+        selectedShotType: newSelected?.type ?? state.selectedShotType,
+        shotPhase: remaining.length === 0 ? { status: 'idle' } : state.shotPhase,
+        scenes: state.scenes.map(s =>
+          s.id === editId ? { ...s, shots: remaining } : s
+        ),
+      };
+    }
+
     case 'UPDATE_LAST_RETURN': {
       if (state.scenes.length === 0) return state;
       const lastScene = state.scenes[state.scenes.length - 1];
+      const lastShot = lastScene.shots[lastScene.shots.length - 1];
+      if (!lastShot) return state;
       const { returnAt, shotSide } = computeReturnAndSide(
-        lastScene.shot.hitFrom,
-        positionToPixelPos(lastScene.shot.bounceAt),
+        lastShot.hitFrom,
+        positionToPixelPos(lastShot.bounceAt),
         action.iconX,
         action.iconY,
-        lastScene.shot.bounceAt.r >= 5 ? 'bottom' : 'top',
+        lastShot.bounceAt.r >= 5 ? 'bottom' : 'top',
       );
       const receiverPos: PixelPos = { x: action.iconX, y: action.iconY };
-      const bounceInBottom = lastScene.shot.bounceAt.r >= 5;
+      const bounceInBottom = lastShot.bounceAt.r >= 5;
       const updatedScene: Scene = {
         ...lastScene,
         p1Pos: bounceInBottom ? receiverPos : lastScene.p1Pos,
         p2Pos: !bounceInBottom ? receiverPos : lastScene.p2Pos,
-        shot: { ...lastScene.shot, returnAt, shotSide },
+        shots: lastScene.shots.map((sh, idx) =>
+          idx === lastScene.shots.length - 1 ? { ...sh, returnAt, shotSide } : sh
+        ),
       };
       return { ...state, scenes: [...state.scenes.slice(0, -1), updatedScene] };
     }
@@ -241,13 +355,19 @@ export function gameReducer(state: GameStateData, action: GameAction): GameState
         state.selectedSceneId !== null
           ? state.scenes.find(s => s.id === state.selectedSceneId) ?? state.scenes[state.scenes.length - 1]
           : state.scenes[state.scenes.length - 1];
-      const clone: Scene = { ...source, id: newId() };
+      const clone: Scene = {
+        ...source,
+        id: newId(),
+        shots: source.shots.map(sh => ({ ...sh, id: newId() })),
+      };
+      const firstShot = clone.shots[0];
       return {
         ...state,
         scenes: [...state.scenes, clone],
         shotPhase: { status: 'editing' },
         selectedSceneId: clone.id,
-        selectedShotType: clone.shot.type,
+        selectedShotId: firstShot?.id ?? null,
+        selectedShotType: firstShot?.type ?? state.selectedShotType,
         subtitleDraft: clone.subtitle,
       };
     }
@@ -257,12 +377,14 @@ export function gameReducer(state: GameStateData, action: GameAction): GameState
       const removeId = state.selectedSceneId ?? state.scenes[state.scenes.length - 1].id;
       const next = state.scenes.filter(s => s.id !== removeId);
       const last = next[next.length - 1];
+      const lastShot = last?.shots[last.shots.length - 1];
       return {
         ...state,
         scenes: next,
         shotPhase: next.length === 0 ? { status: 'idle' } : { status: 'editing' },
         selectedSceneId: last ? last.id : null,
-        selectedShotType: last ? last.shot.type : state.selectedShotType,
+        selectedShotId: lastShot?.id ?? null,
+        selectedShotType: lastShot?.type ?? state.selectedShotType,
         subtitleDraft: last ? last.subtitle : '',
       };
     }
@@ -290,12 +412,16 @@ export function gameReducer(state: GameStateData, action: GameAction): GameState
       if (state.scenes.length === 0) return state;
       const removed = state.scenes[state.scenes.length - 1];
       const next = state.scenes.slice(0, -1);
-      const bounceInBottom = removed.shot.bounceAt.r >= 5;
+      const removedShot = removed.shots[removed.shots.length - 1];
+      const bounceInBottom = removedShot ? removedShot.bounceAt.r >= 5 : false;
+      const last = next[next.length - 1];
+      const lastShot = last?.shots[last.shots.length - 1];
       return {
         ...state,
         scenes: next,
         shotPhase: next.length === 0 ? { status: 'idle' } : { status: 'editing' },
         selectedSceneId: null,
+        selectedShotId: lastShot?.id ?? null,
         p1IconPos: bounceInBottom ? removed.p1Pos : state.p1IconPos,
         p2IconPos: !bounceInBottom ? removed.p2Pos : state.p2IconPos,
       };
@@ -325,15 +451,23 @@ export function gameReducer(state: GameStateData, action: GameAction): GameState
       if (!editId || !state.p1DefaultPos || !state.p2DefaultPos) return state;
       const p1Default: PixelPos = { x: state.p1DefaultPos.x, y: state.p1DefaultPos.y };
       const p2Default: PixelPos = { x: state.p2DefaultPos.x, y: state.p2DefaultPos.y };
-      const hitterDefault = state.activeSide === 'top' ? p1Default : p2Default;
       return {
         ...state,
         subtitleDraft: '',
+        shotPhase: { status: 'idle' },
+        selectedShotId: null,
         p1IconPos: p1Default,
         p2IconPos: p2Default,
         scenes: state.scenes.map(s =>
           s.id === editId
-            ? { ...s, p1Pos: p1Default, p2Pos: p2Default, subtitle: '', shot: { ...s.shot, hitFrom: hitterDefault } }
+            ? {
+                ...s,
+                p1Pos: p1Default,
+                p2Pos: p2Default,
+                subtitle: '',
+                starPos: undefined,
+                shots: [],
+              }
             : s
         ),
       };
